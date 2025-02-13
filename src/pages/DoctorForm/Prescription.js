@@ -9,10 +9,15 @@ import { AddMedicineDiagnosis, getMedicineList } from "../../apicalls/medicine";
 import "./Prescription.css";
 import { GetPatientDetails } from "../../apicalls/users";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { GetAppointmentById } from "../../apicalls/appointment";
+import {
+  GetAppointmentById,
+  UpdateAppointmentStatus,
+} from "../../apicalls/appointment";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { addUserRecord } from "../../apicalls/recordpdf";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import firestoredb from "../../firebaseConfig";
 
 const { Option } = Select;
 
@@ -24,19 +29,39 @@ function Prescription() {
   const [medicineForm] = Form.useForm();
   const dispatch = useDispatch();
   const { appointmentId } = useParams();
-  const location = useLocation();
+
   const componentRef = useRef();
+  const [existingPrescription, setExistingPrescription] = useState(null);
+
+  const fetchExistingPrescription = async () => {
+    try {
+      const prescriptionRef = doc(firestoredb, "prescriptions", appointmentId);
+      const prescriptionSnap = await getDoc(prescriptionRef);
+
+      if (prescriptionSnap.exists()) {
+        const data = prescriptionSnap.data();
+        setExistingPrescription(data);
+        // Pre-fill the form with existing data
+        medicineForm.setFieldsValue({
+          diagnosis: data.diagnosis,
+          medicines: data.medicines,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching prescription:", error);
+    }
+  };
 
   // Function to fetch appointment and patient data
   const fetchAppointmentData = useCallback(async () => {
-    console.log("appt id :",appointmentId)
+    console.log("appt id :", appointmentId);
     try {
       dispatch(ShowLoader(true));
       const response = await GetAppointmentById(appointmentId);
       if (response.success) {
         setAppointmentData(response.data);
         // Fetch patient details using the userId from appointment
-        console.log("patient id ",response.data.userId)
+        console.log("patient id ", response.data.userId);
         const patientResponse = await GetPatientDetails(response.data.userId);
         if (patientResponse.success) {
           setPatientData(patientResponse.data);
@@ -70,7 +95,29 @@ function Prescription() {
   useEffect(() => {
     fetchAppointmentData();
     fetchMedicineList();
+    fetchExistingPrescription();
   }, [fetchAppointmentData, fetchMedicineList]);
+
+  const storePrescriptionData = async (prescriptionData) => {
+    try {
+      const prescriptionRef = doc(firestoredb, "prescriptions", appointmentId);
+      await setDoc(
+        prescriptionRef,
+        {
+          ...prescriptionData,
+          updatedAt: new Date().toISOString(),
+          createdAt:
+            existingPrescription?.createdAt || new Date().toISOString(),
+          doctorId: appointmentData.doctorId,
+          patientId: appointmentData.userId,
+          appointmentId: appointmentId,
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      throw new Error("Failed to store prescription data: " + error.message);
+    }
+  };
 
   // Function to generate PDF
   const generatePDF = async () => {
@@ -208,12 +255,25 @@ function Prescription() {
 
       if (!canSubmit) return;
 
+      const prescriptionData = {
+        ...values,
+        patientId: appointmentData.userId,
+        appointmentId: appointmentId,
+        timestamp: new Date().toISOString(),
+      };
+
       const payload = {
         ...values,
         patientId: appointmentData.userId,
         appointmentId: appointmentId,
         timestamp: new Date().toISOString(),
       };
+
+      // Store prescription data in Firebase
+      await storePrescriptionData(prescriptionData);
+
+      // Update appointment status to seen
+      await UpdateAppointmentStatus(appointmentId, "seen");
 
       const response = await AddMedicineDiagnosis(payload);
       if (response.success) {
@@ -319,7 +379,21 @@ function Prescription() {
 
       {/* Prescription Form */}
       <div className="prescribed-medicine">
-        <h3>Add Diagnosis and Prescribe Medicine</h3>
+        <h3>
+          {existingPrescription
+            ? "Update Diagnosis and Prescribed Medicine"
+            : "Add Diagnosis and Prescribe Medicine"}
+        </h3>
+        {existingPrescription && (
+          <div className="update-notice">
+            <p>
+              You are updating an existing prescription created on{" "}
+              {moment(existingPrescription.createdAt).format(
+                "DD-MM-YYYY HH:mm"
+              )}
+            </p>
+          </div>
+        )}
         <Form onFinish={onFinish} form={medicineForm} layout="vertical">
           <Row gutter={[16, 16]}>
             <Col span={24}>
@@ -460,7 +534,9 @@ function Prescription() {
             </Form.List>
             <Col span={24}>
               <Button type="primary" htmlType="submit" loading={loading}>
-                Save Prescription & Generate PDF
+                {existingPrescription
+                  ? "Update Prescription"
+                  : "Save Prescription & Generate PDF"}
               </Button>
             </Col>
           </Row>

@@ -230,6 +230,32 @@
     }
   };
 
+  export const GetAppointmentById = async (appointmentId) => {
+    try {
+      const appointmentRef = doc(firestoredb, "appointments", appointmentId);
+      const appointmentSnap = await getDoc(appointmentRef);
+
+      if (!appointmentSnap.exists()) {
+        return {
+          success: false,
+          message: "Appointment not found",
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          ...appointmentSnap.data(),
+          id: appointmentSnap.id,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  };
 
   // UpdateRescheduleResponse function modifications
   // Handle patient's response to reschedule request
@@ -327,29 +353,4 @@
     }
   };
 
-  export const GetAppointmentById = async (appointmentId) => {
-    try {
-      const appointmentRef = doc(firestoredb, "appointments", appointmentId);
-      const appointmentSnap = await getDoc(appointmentRef);
-
-      if (!appointmentSnap.exists()) {
-        return {
-          success: false,
-          message: "Appointment not found",
-        };
-      }
-
-      return {
-        success: true,
-        data: {
-          ...appointmentSnap.data(),
-          id: appointmentSnap.id,
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  };
+  
