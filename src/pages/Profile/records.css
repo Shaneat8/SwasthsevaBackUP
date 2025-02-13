@@ -1,0 +1,46 @@
+/* Upload.module.css */
+.uploadContainer {
+  padding: 24px;
+}
+
+.uploadButton {
+  margin-bottom: 16px;
+}
+
+.fileList {
+  width: 100%;
+  max-width: 600px;
+}
+
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.fileItem:last-child {
+  border-bottom: none;
+}
+
+.fileName {
+  font-weight: bold;
+}
+
+.downloadButton {
+  margin-left: 8px;
+}
+
+.deleteButton {
+  margin-left: 8px;
+}
+
+.records-container {
+  padding: 24px;
+}
+
+.upload-button {
+  margin-bottom: 16px;
+}
+
