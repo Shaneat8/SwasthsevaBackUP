@@ -132,7 +132,7 @@ function Prescription() {
     );
 
     const uploadResponse = await fetch(
-      "https://api.cloudinary.com/v1_1/your-cloud-name/raw/upload",
+      "https://api.cloudinary.com/v1_1/dagludyhc/raw/upload",
       {
         method: "POST",
         body: formData,
