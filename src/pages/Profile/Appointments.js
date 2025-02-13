@@ -1,9 +1,10 @@
-import { message, Table, Tabs, Modal, Form, DatePicker, Select, Input, Button } from "antd";
+import { message, Table, Tabs, Modal, Form, DatePicker, Select, Input, Button, Tag } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   GetDoctorAppointments,
   GetUserAppointments,
   UpdateAppointmentStatus,
+  GetDocAppointmentsOnDate,
 } from "../../apicalls/appointment";
 import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
@@ -19,20 +20,40 @@ function Appointments() {
   
   const user = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
-  const nav = useNavigate();
+  const navigate = useNavigate();
 
+  // Time slots available for rescheduling
+  const timeSlots = [
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "12:00 PM - 01:00 PM",
+    "02:00 PM - 03:00 PM",
+    "03:00 PM - 04:00 PM",
+    "04:00 PM - 05:00 PM",
+  ];
+
+  // Fetch appointments data
   const getData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
       let response;
+      
       if (user.role === "doctor") {
         response = await GetDoctorAppointments(user.id);
       } else {
         response = await GetUserAppointments(user.id);
       }
+      
       if (response.success) {
-        setAppointments(response.data);
-        filterAppointments(response.data);
+        const sortedData = response.data.sort((a, b) => {
+          const dateA = moment(a.date + " " + a.timeSlot.split(" - ")[0], "YYYY-MM-DD hh:mm A");
+          const dateB = moment(b.date + " " + b.timeSlot.split(" - ")[0], "YYYY-MM-DD hh:mm A");
+          return dateA - dateB;
+        });
+        
+        setAppointments(sortedData);
+        filterCurrentDayAppointments(sortedData);
       }
     } catch (error) {
       message.error(error.message);
@@ -41,7 +62,8 @@ function Appointments() {
     }
   }, [user.id, user.role, dispatch]);
 
-  const filterAppointments = (data) => {
+  // Filter current day appointments
+  const filterCurrentDayAppointments = (data) => {
     const today = moment().startOf('day');
     const now = moment();
 
@@ -57,77 +79,17 @@ function Appointments() {
     setCurrentDayAppointments(currentDayAppointments);
   };
 
-  const onUpdate = async (id, status, record) => {
+  // Handle appointment status updates
+  const onUpdate = async (id, status, data = {}) => {
     try {
       dispatch(ShowLoader(true));
-      let updateData = { status };
-  
-      if (status === "cancelled") {
-        // Show modal to collect cancellation reason and new appointment details
-        const modalData = await new Promise((resolve) => {
-          Modal.confirm({
-            title: "Cancel Appointment",
-            content: (
-              <Form layout="vertical">
-                <Form.Item label="Reason for Cancellation" name="reason">
-                  <Input.TextArea />
-                </Form.Item>
-                <Form.Item label="Suggest New Date" name="newDate">
-                  <DatePicker />
-                </Form.Item>
-                <Form.Item label="Suggest New Time Slot" name="newTimeSlot">
-                  <Select>
-                    {timeSlots.map((slot) => (
-                      <Select.Option key={slot} value={slot}>
-                        {slot}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Form>
-            ),
-            onOk: (values) => resolve(values),
-            onCancel: () => resolve(null),
-          });
-        });
-  
-        if (!modalData) return; // User cancelled the modal
-        updateData = {
-          ...updateData,
-          ...modalData,
-        };
-      }
-  
-      const response = await UpdateAppointmentStatus(id, status, updateData);
-  
+      const response = await UpdateAppointmentStatus(id, status, data);
+      
       if (response.success) {
-        // Send email notification
-        const emailData = {
-          userEmail: record.userEmail,
-          subject: `Appointment ${status === "approved" ? "Confirmed" : "Cancelled"}`,
-          htmlContent:
-            status === "approved"
-              ? `
-                <h1>Your appointment has been confirmed!</h1>
-                <p>Date: ${record.date}</p>
-                <p>Time: ${record.timeSlot}</p>
-                <p>Doctor: ${record.doctorName}</p>
-              `
-              : `
-                <h1>Your appointment has been cancelled</h1>
-                <p>Reason: ${updateData.reason}</p>
-                <h2>Suggested New Appointment</h2>
-                <p>Date: ${updateData.newDate}</p>
-                <p>Time: ${updateData.newTimeSlot}</p>
-                <p>Please click below to accept or reject the new appointment time:</p>
-                <a href="${window.location.origin}/respond-reschedule/${id}/accept">Accept</a>
-                <a href="${window.location.origin}/respond-reschedule/${id}/reject">Reject</a>
-              `,
-        };
-  
-        await sendAppointmentEmail(emailData);
         message.success(response.message);
         getData();
+        setIsRescheduleModalVisible(false);
+        form.resetFields();
       } else {
         message.error(response.message);
       }
@@ -135,32 +97,54 @@ function Appointments() {
       message.error(error.message);
     } finally {
       dispatch(ShowLoader(false));
+      setSelectedAppointment(null);
     }
   };
+
+  // Handle cancellation/reschedule
   const handleCancel = (record) => {
     setSelectedAppointment(record);
     setIsRescheduleModalVisible(true);
   };
 
+  // Handle reschedule form submission
   const handleRescheduleSubmit = async (values) => {
+    const { reason, newDate, newTimeSlot } = values;
+    
+    // Check if the selected time slot is available
     try {
-      const { reason, newDate, newTimeSlot } = values;
-      await onUpdate(
-        selectedAppointment.id,
-        'cancelled',
-        reason,
-        moment(newDate).format('YYYY-MM-DD'),
-        newTimeSlot
+      dispatch(ShowLoader(true));
+      const response = await GetDocAppointmentsOnDate(
+        selectedAppointment.doctorId,
+        moment(newDate).format('YYYY-MM-DD')
       );
-      setIsRescheduleModalVisible(false);
-      form.resetFields();
+      
+      if (response.success) {
+        const isSlotTaken = response.data.some(
+          app => app.timeSlot === newTimeSlot && app.status !== 'cancelled'
+        );
+        
+        if (isSlotTaken) {
+          message.error('This time slot is already booked. Please select another time.');
+          return;
+        }
+        
+        await onUpdate(selectedAppointment.id, "cancelled", {
+          reason,
+          newDate: moment(newDate).format('YYYY-MM-DD'),
+          newTimeSlot
+        });
+      }
     } catch (error) {
       message.error(error.message);
+    } finally {
+      dispatch(ShowLoader(false));
     }
   };
 
+  // Navigate to patient profile
   const handleViewUser = (record) => {
-    nav(`/patient/${record.userId}`, {
+    navigate(`/patient/${record.userId}`, {
       state: {
         appointmentId: record.id,
         appointmentDetails: record,
@@ -168,128 +152,161 @@ function Appointments() {
     });
   };
 
-  const cols = [
-    {
-      title: "Date",
-      dataIndex: "date",
-    },
-    {
-      title: "Time",
-      dataIndex: "timeSlot",
-    },
-    {
-      title: "Doctor",
-      dataIndex: "doctorName",
-    },
-    {
-      title: "Patient",
-      dataIndex: "userName",
-    },
-    {
-      title: "Booked At",
-      dataIndex: "bookedOn",
-    },
-    {
-      title: "Problem",
-      dataIndex: "problem",
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (text, record) => {
-        let statusText = text.toUpperCase();
-        if (record.rescheduleStatus === 'pending') {
-          statusText += ' (Reschedule Pending)';
-        }
-        return statusText;
-      },
-    },
-  ];
+  // Get status tag color
+  const getStatusColor = (status, rescheduleStatus) => {
+    if (status === "approved") return "green";
+    if (status === "pending") return "orange";
+    if (status === "cancelled") {
+      if (rescheduleStatus === "pending") return "blue";
+      return "red";
+    }
+    return "default";
+  };
 
-  if (user.role === "doctor") {
-    cols.push({
-      title: "Action",
-      dataIndex: "action",
-      render: (text, record) => {
-        if (record.status === "pending") {
-          return (
-            <div className="flex gap-1">
-              <span
-                className="underline cursor-pointer"
-                onClick={() => onUpdate(record.id, "approved")}
-              >
-                Approve
-              </span>
-              <span
-                className="underline cursor-pointer"
-                onClick={() => handleCancel(record)}
-              >
-                Cancel
-              </span>
-            </div>
-          );
-        }
-        if (record.status === "approved") {
-          return (
-            <div className="flex gap-1">
-              <span
-                className="underline cursor-pointer"
-                onClick={() => handleViewUser(record)}
-              >
-                View
-              </span>
-              <span
-                className="underline cursor-pointer"
-                onClick={() => handleCancel(record)}
-              >
-                Cancel
-              </span>
-            </div>
-          );
-        }
+  // Table columns configuration
+  const getColumns = () => {
+    const columns = [
+      {
+        title: "Date",
+        dataIndex: "date",
+        render: (text) => moment(text).format("DD-MM-YYYY"),
       },
-    });
-  }
+      {
+        title: "Time",
+        dataIndex: "timeSlot",
+      },
+      {
+        title: user.role === "doctor" ? "Patient" : "Doctor",
+        dataIndex: user.role === "doctor" ? "userName" : "doctorName",
+      },
+      {
+        title: "Problem",
+        dataIndex: "problem",
+        ellipsis: true,
+      },
+      {
+        title: "Status",
+        render: (text, record) => {
+          let statusText = record.status.toUpperCase();
+          if (record.rescheduleStatus === 'pending') {
+            statusText += ' (Reschedule Pending)';
+          }
+          return (
+            <Tag color={getStatusColor(record.status, record.rescheduleStatus)}>
+              {statusText}
+            </Tag>
+          );
+        },
+      },
+    ];
+
+    // Add action column for doctors
+    if (user.role === "doctor") {
+      columns.push({
+        title: "Action",
+        render: (text, record) => {
+          if (record.status === "pending") {
+            return (
+              <div className="flex gap-1">
+                <Button
+                  type="link"
+                  onClick={() => onUpdate(record.id, "approved")}
+                >
+                  Approve
+                </Button>
+                <Button
+                  type="link"
+                  danger
+                  onClick={() => handleCancel(record)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            );
+          }
+          
+          // Show View button for approved appointments regardless of reschedule status
+          if (record.status === "approved") {
+            return (
+              <div className="flex gap-1">
+                <Button
+                  type="link"
+                  onClick={() => handleViewUser(record)}
+                >
+                  View
+                </Button>
+                {!record.rescheduleStatus && (
+                  <Button
+                    type="link"
+                    danger
+                    onClick={() => handleCancel(record)}
+                  >
+                    Reschedule
+                  </Button>
+                )}
+              </div>
+            );
+          }
+          return null;
+        },
+      });
+    }
+
+    return columns;
+  };
 
   useEffect(() => {
     getData();
   }, [getData]);
 
-  const timeSlots = [
-    "09:00 AM - 10:00 AM",
-    "10:00 AM - 11:00 AM",
-    "11:00 AM - 12:00 PM",
-    "12:00 PM - 01:00 PM",
-    "02:00 PM - 03:00 PM",
-    "03:00 PM - 04:00 PM",
-    "04:00 PM - 05:00 PM",
-  ];
-
   return (
-    <div>
+    <div className="p-4">
+      <h1 className="text-2xl font-semibold mb-4">Appointments</h1>
+      
       {user.role === "doctor" ? (
         <Tabs defaultActiveKey="1">
-          <Tabs.TabPane tab="Current Day Appointments" key="1">
-            <Table columns={cols} dataSource={currentDayAppointments} rowKey="id" />
+          <Tabs.TabPane tab="Today's Appointments" key="1">
+            <Table 
+              columns={getColumns()} 
+              dataSource={currentDayAppointments}
+              rowKey="id"
+              scroll={{ x: true }}
+            />
           </Tabs.TabPane>
           <Tabs.TabPane tab="All Appointments" key="2">
-            <Table columns={cols} dataSource={appointments} rowKey="id" />
+            <Table 
+              columns={getColumns()} 
+              dataSource={appointments}
+              rowKey="id"
+              scroll={{ x: true }}
+            />
           </Tabs.TabPane>
         </Tabs>
       ) : (
-        <Table columns={cols} dataSource={appointments} rowKey="id" />
+        <Table 
+          columns={getColumns()} 
+          dataSource={appointments}
+          rowKey="id"
+          scroll={{ x: true }}
+        />
       )}
 
+      {/* Reschedule Modal */}
       <Modal
         title="Cancel and Reschedule Appointment"
         open={isRescheduleModalVisible}
         onCancel={() => {
           setIsRescheduleModalVisible(false);
+          setSelectedAppointment(null);
           form.resetFields();
         }}
         footer={null}
       >
-        <Form form={form} onFinish={handleRescheduleSubmit} layout="vertical">
+        <Form 
+          form={form} 
+          onFinish={handleRescheduleSubmit} 
+          layout="vertical"
+        >
           <Form.Item
             name="reason"
             label="Cancellation Reason"
@@ -305,7 +322,9 @@ function Appointments() {
           >
             <DatePicker
               className="w-full"
-              disabledDate={(current) => current && current < moment().startOf('day')}
+              disabledDate={(current) => {
+                return current && current < moment().startOf('day');
+              }}
             />
           </Form.Item>
 
@@ -323,11 +342,15 @@ function Appointments() {
             </Select>
           </Form.Item>
 
-          <Form.Item className="flex justify-end">
-            <Button type="default" onClick={() => {
-              setIsRescheduleModalVisible(false);
-              form.resetFields();
-            }} className="mr-2">
+          <Form.Item className="flex justify-end mb-0">
+            <Button 
+              onClick={() => {
+                setIsRescheduleModalVisible(false);
+                setSelectedAppointment(null);
+                form.resetFields();
+              }} 
+              className="mr-2"
+            >
               Cancel
             </Button>
             <Button type="primary" htmlType="submit">

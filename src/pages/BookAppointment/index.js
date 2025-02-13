@@ -1,5 +1,5 @@
 import { Button, Input, message } from "antd";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect,useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { ShowLoader } from "../../redux/loaderSlice";
@@ -14,6 +14,7 @@ import { CheckProfileCompletion } from "../../apicalls/users";
 
 function BookAppointment() {
   const [problem = "", setProblem] = React.useState("");
+  const [error,setError]=useState("");
   const [date = "", setDate] = React.useState("");
   const [doctor, setDoctor] = React.useState(null);
   const [selectedSlot = "", setSelectedSlot] = React.useState("");
@@ -21,7 +22,7 @@ function BookAppointment() {
   const { id } = useParams();
   const dispatch = useDispatch();
   const [bookedSlots = [], setBookedSlots] = React.useState([]);
-  
+
   useEffect(() => {
     const checkProfileCompletion = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
@@ -119,12 +120,23 @@ function BookAppointment() {
   };
 
   const onBookAppointment = async () => {
+    if (!problem.trim()) {
+      message.error('Problem is required');
+      setError('Problem is required');
+      return; // Prevent booking if the problem is empty
+    }
+    
+    setError(''); // Clear the error if the problem is valid
+
     try {
       dispatch(ShowLoader(true));
 
+      const user = JSON.parse(localStorage.getItem("user"));
+
       const payload = {
         doctorId: doctor.id,
-        userId: JSON.parse(localStorage.getItem("user")).id,
+        userId: user.id,
+        userEmail: user.email,
         date,
         slot: selectedSlot,
         timeSlot: `${moment(selectedSlot, "HH:mm A").format(
@@ -280,8 +292,8 @@ function BookAppointment() {
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 rows="5"
-                rules={[{ required: true, message: "Required" }]}
-              ></TextArea>
+              />
+              {error && <div style={{ color: 'red' }}>{error}</div>} 
               <div className="flex gap-2 my-3 justify-center">
                 <Button
                   size="large"

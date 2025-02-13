@@ -12,7 +12,7 @@ import ResetPassword from "./pages/Login/ResetPass";
 import Admin from "./pages/Admin";
 import BookAppointment from "./pages/BookAppointment";
 import Prescription from "./pages/DoctorForm/Prescription";
-import RescheduleResponse from "./pages/Profile/RescheduleResponse.js";
+import RescheduleResponse from "./pages/Profile/RescheduleResponse";
 
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
           <Route path="/resetpass" element={<ResetPassword/>}/>
           <Route path="/admin" element={<ProtectedRoute><Admin/></ProtectedRoute>}/>
           <Route path="/patient/:patientId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>          
-          <Route path="/respond-reschedule/:id/:response" element={<RescheduleRespone />} />
+          <Route path="/reschedule/:id/:response" element={<RescheduleResponse />} />
           <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
         </Routes>
       </BrowserRouter>
