@@ -1,6 +1,6 @@
 // Prescription.js
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Button, Col, Form, Input, message, Row, Select } from "antd";
 import moment from "moment";
@@ -33,7 +33,7 @@ function Prescription() {
   const componentRef = useRef();
   const [existingPrescription, setExistingPrescription] = useState(null);
 
-  const fetchExistingPrescription = async () => {
+  const fetchExistingPrescription = useCallback(async () => {
     try {
       const prescriptionRef = doc(firestoredb, "prescriptions", appointmentId);
       const prescriptionSnap = await getDoc(prescriptionRef);
@@ -50,7 +50,7 @@ function Prescription() {
     } catch (error) {
       console.error("Error fetching prescription:", error);
     }
-  };
+  },[appointmentId,medicineForm]);
 
   // Function to fetch appointment and patient data
   const fetchAppointmentData = useCallback(async () => {
@@ -96,7 +96,7 @@ function Prescription() {
     fetchAppointmentData();
     fetchMedicineList();
     fetchExistingPrescription();
-  }, [fetchAppointmentData, fetchMedicineList]);
+  }, [fetchAppointmentData, fetchMedicineList, fetchExistingPrescription]);
 
   const storePrescriptionData = async (prescriptionData) => {
     try {
