@@ -32,7 +32,7 @@ function App() {
           <Route path="/forgot" element={<ForgotPassword/>}/>
           <Route path="/resetpass" element={<ResetPassword/>}/>
           <Route path="/admin" element={<ProtectedRoute><Admin/></ProtectedRoute>}/>
-          <Route path="/patient/:patientId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>          
+          <Route path="/appointment/:appointmentId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>          
           <Route path="/reschedule/:id/:response" element={<RescheduleResponse />} />
           <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
         </Routes>

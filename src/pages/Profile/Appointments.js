@@ -1,4 +1,4 @@
-import { message, Table, Tabs, Modal, Form, DatePicker, Select, Input, Button, Tag } from "antd";
+import { message, Table, Tabs, Modal, Form, DatePicker, Select, Input, Button, Tag, Tooltip } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   GetDoctorAppointments,
@@ -22,7 +22,6 @@ function Appointments() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Time slots available for rescheduling
   const timeSlots = [
     "09:00 AM - 10:00 AM",
     "10:00 AM - 11:00 AM",
@@ -33,7 +32,6 @@ function Appointments() {
     "04:00 PM - 05:00 PM",
   ];
 
-  // Fetch appointments data
   const getData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
@@ -62,7 +60,6 @@ function Appointments() {
     }
   }, [user.id, user.role, dispatch]);
 
-  // Filter current day appointments
   const filterCurrentDayAppointments = (data) => {
     const today = moment().startOf('day');
     const now = moment();
@@ -73,13 +70,12 @@ function Appointments() {
       const appointmentTime = moment(startTime, "hh:mm A");
       const isToday = appointmentDate.isSame(today, 'day');
       const isFutureTime = appointmentTime.isAfter(now);
-      return isToday && isFutureTime;
+      return isToday && (isFutureTime || appointment.status === 'approved');
     });
 
     setCurrentDayAppointments(currentDayAppointments);
   };
 
-  // Handle appointment status updates
   const onUpdate = async (id, status, data = {}) => {
     try {
       dispatch(ShowLoader(true));
@@ -101,17 +97,14 @@ function Appointments() {
     }
   };
 
-  // Handle cancellation/reschedule
   const handleCancel = (record) => {
     setSelectedAppointment(record);
     setIsRescheduleModalVisible(true);
   };
 
-  // Handle reschedule form submission
   const handleRescheduleSubmit = async (values) => {
     const { reason, newDate, newTimeSlot } = values;
     
-    // Check if the selected time slot is available
     try {
       dispatch(ShowLoader(true));
       const response = await GetDocAppointmentsOnDate(
@@ -142,18 +135,17 @@ function Appointments() {
     }
   };
 
-  // Navigate to patient profile
-  const handleViewUser = (record) => {
-    navigate(`/patient/${record.userId}`, {
+  const handleViewAppointment = (record) => {
+    navigate(`/appointment/${record.id}`, {
       state: {
-        appointmentId: record.id,
         appointmentDetails: record,
+        mode: record.status === 'seen' ? 'view' : 'edit'
       },
     });
   };
 
-  // Get status tag color
   const getStatusColor = (status, rescheduleStatus) => {
+    if (status === "seen") return "purple";
     if (status === "approved") return "green";
     if (status === "pending") return "orange";
     if (status === "cancelled") {
@@ -163,7 +155,6 @@ function Appointments() {
     return "default";
   };
 
-  // Table columns configuration
   const getColumns = () => {
     const columns = [
       {
@@ -182,7 +173,13 @@ function Appointments() {
       {
         title: "Problem",
         dataIndex: "problem",
-        ellipsis: true,
+        render: (text) => (
+          <Tooltip title={text}>
+            <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {text}
+            </div>
+          </Tooltip>
+        ),
       },
       {
         title: "Status",
@@ -200,7 +197,6 @@ function Appointments() {
       },
     ];
 
-    // Add action column for doctors
     if (user.role === "doctor") {
       columns.push({
         title: "Action",
@@ -225,17 +221,16 @@ function Appointments() {
             );
           }
           
-          // Show View button for approved appointments regardless of reschedule status
-          if (record.status === "approved") {
+          if (record.status === "approved" || record.status === "seen") {
             return (
               <div className="flex gap-1">
                 <Button
                   type="link"
-                  onClick={() => handleViewUser(record)}
+                  onClick={() => handleViewAppointment(record)}
                 >
-                  View
+                  {record.status === "seen" ? "View/Edit" : "Start Consultation"}
                 </Button>
-                {!record.rescheduleStatus && (
+                {record.status === "approved" && !record.rescheduleStatus && (
                   <Button
                     type="link"
                     danger
@@ -291,7 +286,6 @@ function Appointments() {
         />
       )}
 
-      {/* Reschedule Modal */}
       <Modal
         title="Cancel and Reschedule Appointment"
         open={isRescheduleModalVisible}

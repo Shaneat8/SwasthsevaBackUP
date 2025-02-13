@@ -233,29 +233,43 @@ export const CheckProfileCompletion = async (userId) => {
 
 export const GetPatientDetails = async (patientId) => {
   try {
-    const user = await getDocs(
+    if (!patientId) {
+      throw new Error("Patient ID is required");
+    }
+
+    const userDocs = await getDocs(
       query(
-        collection(firestoredb, "userDetails"),where("userId", "==", patientId))
+        collection(firestoredb, "userDetails"),
+        where("userId", "==", patientId)
+      )
     );
-    if (user.size > 0) {
+
+    const userData = [];
+    userDocs.forEach((doc) => {
+      userData.push({
+        ...doc.data(),
+        id: doc.id,
+      });
+    });
+
+    if (userData.length > 0) {
       return {
         success: true,
         message: "User details found",
-        data: user.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        }))[0], // Fetch only the first matching record
-      };
-    } else {
-      return {
-        success: false,
-        message: "User details not found",
+        data: userData[0],
       };
     }
-  } catch (error) {
+
     return {
       success: false,
-      message: error.message,
+      message: "User details not found",
+    };
+
+  } catch (error) {
+    console.error("Error fetching patient details:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetch patient details",
     };
   }
 };

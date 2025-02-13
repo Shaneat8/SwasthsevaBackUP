@@ -1,39 +1,48 @@
 // Prescription.js
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { Button, Col, Form, Input, message, Row, Select, Space } from "antd";
+import { Button, Col, Form, Input, message, Row, Select } from "antd";
 import moment from "moment";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { AddMedicineDiagnosis, getMedicineList } from "../../apicalls/medicine";
 import "./Prescription.css";
 import { GetPatientDetails } from "../../apicalls/users";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { GetUserAppointments } from "../../apicalls/appointment";
-import { useReactToPrint } from 'react-to-print';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { GetAppointmentById } from "../../apicalls/appointment";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { addUserRecord } from "../../apicalls/recordpdf";
 
 const { Option } = Select;
 
 function Prescription() {
   const [patientData, setPatientData] = useState();
-  const [appointmentData, setAppointmentData] = useState([]);
+  const [appointmentData, setAppointmentData] = useState(null);
   const [loading] = useState(false);
   const [medicineList, setMedicineList] = useState([]);
   const [medicineForm] = Form.useForm();
   const dispatch = useDispatch();
-  const { patientId } = useParams();
+  const { appointmentId } = useParams();
+  const location = useLocation();
   const componentRef = useRef();
 
-  // Fetch patient data
-  const fetchPatientData = useCallback(async () => {
+  // Function to fetch appointment and patient data
+  const fetchAppointmentData = useCallback(async () => {
+    console.log("appt id :",appointmentId)
     try {
       dispatch(ShowLoader(true));
-      const response = await GetPatientDetails(patientId);
+      const response = await GetAppointmentById(appointmentId);
       if (response.success) {
-        setPatientData(response.data);
+        setAppointmentData(response.data);
+        // Fetch patient details using the userId from appointment
+        console.log("patient id ",response.data.userId)
+        const patientResponse = await GetPatientDetails(response.data.userId);
+        if (patientResponse.success) {
+          setPatientData(patientResponse.data);
+        } else {
+          message.error("Failed to fetch patient details");
+        }
       } else {
         message.error(response.message);
       }
@@ -42,9 +51,9 @@ function Prescription() {
     } finally {
       dispatch(ShowLoader(false));
     }
-  }, [dispatch, patientId]);
+  }, [dispatch, appointmentId]);
 
-  // Fetch medicine list
+  // Function to fetch medicine list
   const fetchMedicineList = useCallback(async () => {
     try {
       const response = await getMedicineList();
@@ -58,64 +67,72 @@ function Prescription() {
     }
   }, []);
 
-  // Fetch user appointments
-  const fetchUserAppointments = useCallback(async () => {
-    try {
-      const response = await GetUserAppointments(patientId);
-      if (response.success) {
-        setAppointmentData(response.data);
-      } else {
-        message.error(response.message);
-      }
-    } catch (error) {
-      message.error(error.message);
-    }
-  }, [patientId]);
-
   useEffect(() => {
-    fetchPatientData();
+    fetchAppointmentData();
     fetchMedicineList();
-    fetchUserAppointments();
-  }, [fetchPatientData, fetchMedicineList, fetchUserAppointments]);
+  }, [fetchAppointmentData, fetchMedicineList]);
 
-     // Add print handler
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-    documentTitle: `Prescription_${patientData?.FirstName || 'Patient'}_${moment().format('DDMMYYYY')}`,
-    removeAfterPrint: true,
-    pageStyle: `
-      @page {
-        size: A4;
-        margin: 20mm;
-      }
-    `,
-  });
-
-  // Function to convert HTML to PDF and get the file
+  // Function to generate PDF
   const generatePDF = async () => {
     const content = componentRef.current;
-    const canvas = await html2canvas(content);
-    const imgData = canvas.toDataURL('image/png');
-    
-    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    const canvas = await html2canvas(content, {
+      scale: 3,
+      useCORS: true,
+      logging: false,
+      letterRendering: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      width: content.offsetWidth,
+      height: content.offsetHeight,
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const containerWidth = content.offsetWidth;
+    const containerHeight = content.offsetHeight;
+
+    const mmWidth = (containerWidth * 25.4) / 96;
+    const mmHeight = (containerHeight * 25.4) / 96;
+
+    const pdf = new jsPDF({
+      orientation: mmWidth > mmHeight ? "landscape" : "portrait",
+      unit: "mm",
+      format: [mmWidth + 10, mmHeight + 10],
+    });
+
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    return pdf.output('blob');
+
+    const margin = 5;
+    pdf.addImage(
+      imgData,
+      "JPEG",
+      margin,
+      margin,
+      pdfWidth - margin * 2,
+      pdfHeight - margin * 2
+    );
+
+    return pdf.output("blob");
   };
 
   // Function to upload to Cloudinary
   const uploadToCloudinary = async (pdfBlob) => {
     const formData = new FormData();
-    const fileName = `prescription_${patientData?.FirstName || 'Patient'}_${moment().format('DDMMYYYY')}.pdf`;
-    
+    const fileName = `prescription_${
+      patientData?.FirstName || "Patient"
+    }_${moment().format("DDMMYYYY")}.pdf`;
+
     formData.append("file", pdfBlob, fileName);
     formData.append("upload_preset", "Records");
-    formData.append("folder", `patient-records/${patientId}/prescriptions`);
+    formData.append(
+      "folder",
+      `patient-records/${appointmentData.userId}/prescriptions`
+    );
 
     const uploadResponse = await fetch(
-      "https://api.cloudinary.com/v1_1/dagludyhc/raw/upload",
+      "https://api.cloudinary.com/v1_1/your-cloud-name/raw/upload",
       {
         method: "POST",
         body: formData,
@@ -125,130 +142,32 @@ function Prescription() {
     return await uploadResponse.json();
   };
 
-  // Handle adding diagnosis and medicine
-  const onFinish = async (values) => {
-    try {
-      dispatch(ShowLoader(true));
-      const medicines = values.medicines || [];
-      let canSubmit = true;
-  
-      medicines.forEach((medicine) => {
-        const selectedMedicine = medicineList.find(
-          (m) => m.id === medicine.medicineId
-        );
-        if (selectedMedicine) {
-          const dosage = Number(medicine.dosage || 0);
-          const days = Number(medicine.days || 0);
-          const instruction = medicine.instruction || "OD";
-  
-          // Convert instruction to a numeric value
-          const instructionsPerDay = {
-            OD: 1,
-            BD: 2,
-            TDS: 3,
-            QID: 4,
-          }[instruction] || 1; // Default to 1 if instruction is invalid
-  
-          const totalRequired = dosage * instructionsPerDay * days;
-  
-          if (totalRequired > selectedMedicine.quantity) {
-            message.warning(
-              `Warning: The total required quantity (${totalRequired}) exceeds the available stock (${selectedMedicine.quantity}) for medicine: ${selectedMedicine.medicineName}.`
-            );
-            canSubmit = false;
-          }
-        }
-      });
-  
-      if (!canSubmit) {
-        return; // Prevent form submission
-      }
-  
-      const payload = {
-        ...values,
-        patientId,
-        timestamp: new Date().toISOString(),
-      };
-      const response = await AddMedicineDiagnosis(payload);
-      if (response.success) {
-
-          handlePrint(); // Print after successful submission
-         // 2. Generate PDF
-         const pdfBlob = await generatePDF();
-
-         // 3. Upload to Cloudinary
-         const cloudinaryResponse = await uploadToCloudinary(pdfBlob);
- 
-         // 4. Save to Firebase
-         const recordData = {
-           name: `Prescription_${moment().format('DDMMYYYY')}`,
-           url: cloudinaryResponse.secure_url,
-           public_id: cloudinaryResponse.public_id,
-           userId: patientId,
-           type: 'prescription',
-           diagnosis: values.diagnosis,
-           medicines: values.medicines,
-           timestamp: new Date().toISOString()
-         };
- 
-         await addUserRecord(patientId, recordData);
- 
-         // 5. Trigger download
-         const downloadUrl = URL.createObjectURL(pdfBlob);
-         const link = document.createElement('a');
-         link.href = downloadUrl;
-         link.download = `Prescription_${patientData?.FirstName || 'Patient'}_${moment().format('DDMMYYYY')}.pdf`;
-         document.body.appendChild(link);
-         link.click();
-         document.body.removeChild(link);
-         URL.revokeObjectURL(downloadUrl);
-
-        message.success("Diagnosis and medicine added successfully!");
-        medicineForm.resetFields();
-        fetchPatientData(); // Refetch patient data to reflect changes
-      } else {
-        message.error(response.message);
-        
-      }
-    } catch (error) {
-      message.error(error.message);
-      console.error("Error in prescription submission:", error);
-    } finally {
-      dispatch(ShowLoader(false));
-    }
-  };
-
+  // Calculate age function
   const calculateAge = (dob) => {
     if (!dob) return "N/A";
     return moment().diff(moment(dob, "YYYY-MM-DD"), "years");
   };
 
+  // Handle medicine change
   const handleMedicineChange = (value, index) => {
     const selectedMedicine = medicineList.find(
       (medicine) => medicine.id === value
     );
     if (selectedMedicine) {
       const currentMedicines = medicineForm.getFieldValue("medicines") || [];
-      const dosage = Number(currentMedicines[index]?.dosage || 0);
+      const morning = Number(currentMedicines[index]?.morning || 0);
+      const afternoon = Number(currentMedicines[index]?.afternoon || 0);
+      const night = Number(currentMedicines[index]?.night || 0);
       const days = Number(currentMedicines[index]?.days || 0);
-      const instruction = currentMedicines[index]?.instruction || "OD";
-  
-      // Convert instruction to a numeric value
-      const instructionsPerDay = {
-        OD: 1,
-        BD: 2,
-        TDS: 3,
-        QID: 4,
-      }[instruction] || 1; // Default to 1 if instruction is invalid
-  
-      const totalRequired = dosage * instructionsPerDay * days;
-  
+
+      const totalRequired = (morning + afternoon + night) * days;
+
       if (totalRequired > selectedMedicine.quantity) {
         message.warning(
           `Warning: The total required quantity (${totalRequired}) exceeds the available stock (${selectedMedicine.quantity}) for medicine: ${selectedMedicine.medicineName}.`
         );
       }
-  
+
       currentMedicines[index] = {
         ...currentMedicines[index],
         medicineName: selectedMedicine.medicineName,
@@ -259,15 +178,96 @@ function Prescription() {
     }
   };
 
+  // Handle form submission
+  const onFinish = async (values) => {
+    try {
+      dispatch(ShowLoader(true));
+      const medicines = values.medicines || [];
+      let canSubmit = true;
+
+      medicines.forEach((medicine) => {
+        const selectedMedicine = medicineList.find(
+          (m) => m.id === medicine.medicineId
+        );
+        if (selectedMedicine) {
+          const morning = Number(medicine.morning || 0);
+          const afternoon = Number(medicine.afternoon || 0);
+          const night = Number(medicine.night || 0);
+          const days = Number(medicine.days || 0);
+
+          const totalRequired = (morning + afternoon + night) * days;
+
+          if (totalRequired > selectedMedicine.quantity) {
+            message.warning(
+              `Warning: The total required quantity (${totalRequired}) exceeds the available stock (${selectedMedicine.quantity}) for medicine: ${selectedMedicine.medicineName}.`
+            );
+            canSubmit = false;
+          }
+        }
+      });
+
+      if (!canSubmit) return;
+
+      const payload = {
+        ...values,
+        patientId: appointmentData.userId,
+        appointmentId: appointmentId,
+        timestamp: new Date().toISOString(),
+      };
+
+      const response = await AddMedicineDiagnosis(payload);
+      if (response.success) {
+        // Generate and upload PDF
+        const pdfBlob = await generatePDF();
+        const cloudinaryResponse = await uploadToCloudinary(pdfBlob);
+
+        // Save record to Firebase
+        const recordData = {
+          name: `Prescription_${moment().format("DDMMYYYY")}`,
+          url: cloudinaryResponse.secure_url,
+          public_id: cloudinaryResponse.public_id,
+          userId: appointmentData.userId,
+          type: "prescription",
+          diagnosis: values.diagnosis,
+          medicines: values.medicines,
+          timestamp: new Date().toISOString(),
+        };
+
+        await addUserRecord(appointmentData.userId, recordData);
+
+        // Download PDF
+        const downloadUrl = URL.createObjectURL(pdfBlob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `Prescription_${
+          patientData?.FirstName || "Patient"
+        }_${moment().format("DDMMYYYY")}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+
+        message.success("Prescription saved successfully!");
+        medicineForm.resetFields();
+      } else {
+        message.error(response.message);
+      }
+    } catch (error) {
+      message.error(error.message);
+    } finally {
+      dispatch(ShowLoader(false));
+    }
+  };
 
   return (
     <div className="prescription-container" ref={componentRef}>
-      {/* Display Patient Information */}
+      {/* Header */}
       <div className="header">
         <h1>Patient Details</h1>
-        <h2>OPD Receipt - Polyclinic (City Name)</h2>
+        <h2>OPD Receipt - Polyclinic</h2>
       </div>
 
+      {/* Patient Information */}
       <div className="patient-info">
         <h3>PATIENT INFORMATION</h3>
         <div className="info-grid">
@@ -282,7 +282,9 @@ function Prescription() {
           <div className="info-item">
             <label>DOB:</label>
             <span>
-              {moment(patientData?.DOB).format("DD-MM-YYYY") || "N/A"}
+              {patientData?.DOB
+                ? moment(patientData.DOB).format("DD-MM-YYYY")
+                : "N/A"}
             </span>
           </div>
           <div className="info-item">
@@ -299,22 +301,22 @@ function Prescription() {
           </div>
           <div className="info-item">
             <label>Age:</label>
-            <span>{calculateAge(patientData?.DOB) || "N/A"}</span>
+            <span>{calculateAge(patientData?.DOB)}</span>
           </div>
           <div className="info-item address">
             <label>Address:</label>
             <span>{patientData?.address || "N/A"}</span>
           </div>
-          {appointmentData.length > 0 && (
+          {appointmentData && (
             <div className="info-item" style={{ width: "310%" }}>
               <label>Problem:</label>&nbsp;
-              <span>{appointmentData[0].problem || "No problem specified"}</span>
+              <span>{appointmentData.problem || "No problem specified"}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Add Diagnosis and Medicine Form */}
+      {/* Prescription Form */}
       <div className="prescribed-medicine">
         <h3>Add Diagnosis and Prescribe Medicine</h3>
         <Form onFinish={onFinish} form={medicineForm} layout="vertical">
@@ -331,78 +333,117 @@ function Prescription() {
             <Form.List name="medicines">
               {(fields, { add, remove }) => (
                 <React.Fragment>
-                  {fields.map(({ key, name, fieldKey, ...restField }, index) => (
-                    <Space
-                      key={fieldKey}
-                      style={{ display: "flex", marginBottom: 8 }}
-                      align="baseline"
+                  <div className="medicine-table">
+                    <table
+                      style={{ width: "100%", borderCollapse: "collapse" }}
                     >
-                      <Form.Item
-                        {...restField}
-                        name={[name, "medicineId"]}
-                        label="Nomenclature"
-                        rules={[{ required: true, message: "Select medicine" }]}
-                      >
-                        <Select
-                          showSearch
-                          style={{ width: 200, height: 40 }}
-                          placeholder="Select medicine"
-                          onChange={(value) => handleMedicineChange(value, index)}
-                          filterOption={(input, option) =>
-                            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                          }
-                        >
-                          {medicineList.map((medicine) => (
-                            <Option key={medicine.id} value={medicine.id}>
-                              {medicine.medicineName}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                      <Form.Item
-                        {...restField}
-                        name={[name, "dosage"]}
-                        label="Dosage"
-                        rules={[{ required: true, message: "Enter dosage" }]}
-                      >
-                        <Input type="number" style={{ width: 100, height: 40 }} />
-                      </Form.Item>
-                      <Form.Item
-                        {...restField}
-                        name={[name, "instruction"]}
-                        label="Instruction"
-                        rules={[{ required: true, message: "Enter instruction" }]}
-                      >
-                        <Select style={{ width: 150, height: 40 }}>
-                          <Option value="OD">1 time (OD)</Option>
-                          <Option value="BD">2 times (BD)</Option>
-                          <Option value="TDS">3 times (TDS)</Option>
-                          <Option value="QID">4 times (QID)</Option>
-                        </Select>
-                      </Form.Item>
-                      <Form.Item
-                        {...restField}
-                        name={[name, "days"]}
-                        label="Days"
-                        rules={[{ required: true, message: "Enter days" }]}
-                      >
-                        <Input type="number" style={{ width: 100, height: 40 }} />
-                      </Form.Item>
-                      <Form.Item
-                        {...restField}
-                        name={[name, "balance"]}
-                        label="Balance"
-                      >
-                        <Input disabled style={{ width: 100, height: 40 }} />
-                      </Form.Item>
-                      {fields.length > 1 && (
-                        <MinusCircleOutlined
-                          onClick={() => remove(name)}
-                          style={{ marginLeft: 8, color: "#ff4d4f" }}
-                        />
-                      )}
-                    </Space>
-                  ))}
+                      <thead>
+                        <tr>
+                          <th>Medication Name</th>
+                          <th>Morning</th>
+                          <th>Afternoon</th>
+                          <th>Night</th>
+                          <th>Duration</th>
+                          <th>Balance</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fields.map(
+                          ({ key, name, fieldKey, ...restField }, index) => (
+                            <tr key={key}>
+                              <td>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "medicineId"]}
+                                  rules={[
+                                    {
+                                      required: true,
+                                      message: "Select medicine",
+                                    },
+                                  ]}
+                                >
+                                  <Select
+                                    showSearch
+                                    style={{ width: "100%" }}
+                                    placeholder="Select medicine"
+                                    onChange={(value) =>
+                                      handleMedicineChange(value, index)
+                                    }
+                                    filterOption={(input, option) =>
+                                      option.children
+                                        .toLowerCase()
+                                        .indexOf(input.toLowerCase()) >= 0
+                                    }
+                                  >
+                                    {medicineList.map((medicine) => (
+                                      <Option
+                                        key={medicine.id}
+                                        value={medicine.id}
+                                      >
+                                        {medicine.medicineName}
+                                      </Option>
+                                    ))}
+                                  </Select>
+                                </Form.Item>
+                              </td>
+                              <td>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "morning"]}
+                                >
+                                  <Input type="number" min={0} max={1} />
+                                </Form.Item>
+                              </td>
+                              <td>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "afternoon"]}
+                                >
+                                  <Input type="number" min={0} max={1} />
+                                </Form.Item>
+                              </td>
+                              <td>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "night"]}
+                                >
+                                  <Input type="number" min={0} max={1} />
+                                </Form.Item>
+                              </td>
+                              <td>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "days"]}
+                                  rules={[
+                                    { required: true, message: "Enter days" },
+                                  ]}
+                                >
+                                  <Input type="number" />
+                                </Form.Item>
+                              </td>
+                              <td>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "balance"]}
+                                >
+                                  <Input disabled />
+                                </Form.Item>
+                              </td>
+                              <td>
+                                {fields.length > 1 && (
+                                  <MinusCircleOutlined
+                                    onClick={() => remove(name)}
+                                    style={{ color: "#ff4d4f" }}
+                                  />
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                   <Form.Item>
                     <Button
                       type="dashed"
@@ -417,16 +458,7 @@ function Prescription() {
               )}
             </Form.List>
             <Col span={24}>
-              <Button type="primary" htmlType="submit" loading={loading} onClick={handlePrint}>
-                Add Diagnosis & Medicine
-              </Button>
-            </Col>
-            <Col span={24}>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                loading={loading}
-              >
+              <Button type="primary" htmlType="submit" loading={loading}>
                 Save Prescription & Generate PDF
               </Button>
             </Col>
