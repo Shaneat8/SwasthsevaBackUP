@@ -219,8 +219,9 @@ function Prescription() {
       if (response.success) {
         // Generate and upload PDF
         const pdfBlob = await generatePDF();
+        console.log("PDF generated:", pdfBlob);
         const cloudinaryResponse = await uploadToCloudinary(pdfBlob);
-
+        console.log("Cloudinary response:", cloudinaryResponse);
         // Save record to Firebase
         const recordData = {
           name: `Prescription_${moment().format("DDMMYYYY")}`,
