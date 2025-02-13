@@ -2,16 +2,9 @@ import { message } from 'antd';
 import axios from 'axios';
 
 const sendPasswordResetEmail = async (email, resetLink) => {
-    // const apiKey = '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'; // Your Sendinblue API key
+    
     const apiKey = process.env.REACT_APP_SENDINBLUE_API_KEY;
-    // console.log('API Key:', apiKey);
-
-
-    // Assuming your frontend is hosted at this URL; adjust as necessary
-    // const resetLink = `http://localhost/resetpass?token=${resetToken}`; // Change this for production
-    // console.log('Reset Link:', resetLink);  // Log the reset link
-
-    // const resetLink = `http://swasthyasevawovv.netlify.app/resetpass?token=${resetToken}`;
+   
 
     const emailData = {
         sender: {
