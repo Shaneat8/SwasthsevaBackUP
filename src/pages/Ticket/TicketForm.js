@@ -109,11 +109,10 @@ const TicketForm = () => {
               <div class="ticket-info">
                 <div class="ticket-id">Ticket ID: ${ticketId}</div>
                 
-                <div class="info-label">Query Type:</div>
-                <div>${queryType}</div>
+                <div class="info-label">Query Type: ${queryType}</div>
 
-                <div class="info-label">Priority:</div>
-                <div class="priority-badge priority-${priority.toLowerCase()}">${priority}</div>
+                <div class="info-label">Priority: &nbsp;
+                <p class="priority-badge priority-${priority.toLowerCase()}">${priority}</p></div>
 
                 <div class="info-label">Query Details:</div>
                 <div style="background: #f8fafc; padding: 15px; margin: 15px 0; border-left: 4px solid #2563eb;">
@@ -127,7 +126,7 @@ const TicketForm = () => {
               </div>
   
               <div style="text-align: center;">
-                <a href="${WEBSITE_URL}track-ticket/${ticketId}" 
+                <a href="${WEBSITE_URL}/track-ticket/${ticketId}" 
                    style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 25px; 
                           border-radius: 8px; text-decoration: none; font-weight: 500;">
                   Track Your Ticket
