@@ -126,7 +126,7 @@ const TicketForm = () => {
               </div>
   
               <div style="text-align: center;">
-                <a href="${WEBSITE_URL}/track-ticket/${ticketId}" 
+                <a href="${WEBSITE_URL}track-ticket/${ticketId}" 
                    style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 25px; 
                           border-radius: 8px; text-decoration: none; font-weight: 500;">
                   Track Your Ticket
