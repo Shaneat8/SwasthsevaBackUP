@@ -1,6 +1,6 @@
 // Prescription.js
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Button, Col, Form, Input, message, Row, Select } from "antd";
 import moment from "moment";
@@ -8,7 +8,7 @@ import { ShowLoader } from "../../redux/loaderSlice";
 import { AddMedicineDiagnosis, getMedicineList } from "../../apicalls/medicine";
 import "./Prescription.css";
 import { GetPatientDetails } from "../../apicalls/users";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { FolderOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   GetAppointmentById,
   UpdateAppointmentStatus,
@@ -28,11 +28,55 @@ function Prescription() {
   const [medicineList, setMedicineList] = useState([]);
   const [medicineForm] = Form.useForm();
   const dispatch = useDispatch();
-  const { appointmentId } = useParams();
-
   const componentRef = useRef();
   const [existingPrescription, setExistingPrescription] = useState(null);
+  const navigate=useNavigate();
+  const { appointmentId } = useParams();
 
+  const handleViewRecords = () => {
+    if (appointmentData?.userId) {
+      const formData = medicineForm.getFieldsValue(); // Get current form data
+      navigate(`/patient-records/${appointmentData.userId}`, {
+        state: {
+          appointmentId: appointmentId,
+          returnPath: `/appointment/${appointmentId}`,
+          formData: formData, 
+        },
+      });
+    } else {
+      message.error("Patient data not available");
+    }
+  };
+
+  // Add this to check if user is authorized to view this prescription
+  const checkAccess = useCallback(async () => {
+    console.log("appt id :", appointmentId);
+    try {
+      dispatch(ShowLoader(true));
+      const response = await GetAppointmentById(appointmentId);
+      
+      if (response.success) {
+        setAppointmentData(response.data);
+        // Fetch patient details using the userId from appointment
+        console.log("patient id ", response.data.userId);
+        const patientResponse = await GetPatientDetails(response.data.userId);
+        if (patientResponse.success) {
+          setPatientData(patientResponse.data);
+        } else {
+          message.error("Failed to fetch patient details");
+          navigate('/'); // Redirect to home if patient details can't be fetched
+        }
+      } else {
+        message.error("Invalid appointment");
+        navigate('/'); // Redirect to home if appointment is invalid
+      }
+    } catch (error) {
+      message.error(error.message);
+      navigate('/'); // Redirect to home if there's an error
+    } finally {
+      dispatch(ShowLoader(false));
+    }
+  }, [appointmentId, dispatch, navigate]);
   const fetchExistingPrescription = useCallback(async () => {
     try {
       const prescriptionRef = doc(firestoredb, "prescriptions", appointmentId);
@@ -52,32 +96,6 @@ function Prescription() {
     }
   },[appointmentId,medicineForm]);
 
-  // Function to fetch appointment and patient data
-  const fetchAppointmentData = useCallback(async () => {
-    console.log("appt id :", appointmentId);
-    try {
-      dispatch(ShowLoader(true));
-      const response = await GetAppointmentById(appointmentId);
-      if (response.success) {
-        setAppointmentData(response.data);
-        // Fetch patient details using the userId from appointment
-        console.log("patient id ", response.data.userId);
-        const patientResponse = await GetPatientDetails(response.data.userId);
-        if (patientResponse.success) {
-          setPatientData(patientResponse.data);
-        } else {
-          message.error("Failed to fetch patient details");
-        }
-      } else {
-        message.error(response.message);
-      }
-    } catch (error) {
-      message.error(error.message);
-    } finally {
-      dispatch(ShowLoader(false));
-    }
-  }, [dispatch, appointmentId]);
-
   // Function to fetch medicine list
   const fetchMedicineList = useCallback(async () => {
     try {
@@ -93,10 +111,10 @@ function Prescription() {
   }, []);
 
   useEffect(() => {
-    fetchAppointmentData();
+    checkAccess();
     fetchMedicineList();
     fetchExistingPrescription();
-  }, [fetchAppointmentData, fetchMedicineList, fetchExistingPrescription]);
+  }, [checkAccess, fetchMedicineList, fetchExistingPrescription]);
 
   const storePrescriptionData = async (prescriptionData) => {
     try {
@@ -323,9 +341,21 @@ function Prescription() {
   return (
     <div className="prescription-container" ref={componentRef}>
       {/* Header */}
-      <div className="header">
+      <div className="header" style={{ position: 'relative' }}>
         <h1>Patient Details</h1>
         <h2>OPD Receipt - Polyclinic</h2>
+        <Button 
+          type="primary"
+          icon={<FolderOutlined />}
+          onClick={handleViewRecords}
+          style={{ 
+            position: 'absolute', 
+            top: '20px', 
+            right: '20px'
+          }}
+        >
+          View Patient Records
+        </Button>
       </div>
 
       {/* Patient Information */}

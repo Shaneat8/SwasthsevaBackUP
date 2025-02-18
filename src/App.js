@@ -13,7 +13,8 @@ import Admin from "./pages/Admin";
 import BookAppointment from "./pages/BookAppointment";
 import Prescription from "./pages/DoctorForm/Prescription";
 import RescheduleResponse from "./pages/Profile/RescheduleResponse";
-
+import TicketTracking from "./pages/Ticket/TicketTracking";
+import PatientRecordsPage from "./pages/DoctorForm/PatientRecordsPage";
 
 function App() {
   const {loading}=useSelector((state)=>state.loader);
@@ -32,8 +33,12 @@ function App() {
           <Route path="/forgot" element={<ForgotPassword/>}/>
           <Route path="/resetpass" element={<ResetPassword/>}/>
           <Route path="/admin" element={<ProtectedRoute><Admin/></ProtectedRoute>}/>
-          <Route path="/appointment/:appointmentId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>          
+          <Route path="/appointment/:appointmentId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>                   
           <Route path="/reschedule/:id/:response" element={<RescheduleResponse />} />
+          <Route path="/patient-records/:patientId" element={<PatientRecordsPage />} />
+
+          <Route path="/track-ticket/:ticketId" element={<ProtectedRoute><TicketTracking/></ProtectedRoute>} />
+          
           <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
         </Routes>
       </BrowserRouter>
