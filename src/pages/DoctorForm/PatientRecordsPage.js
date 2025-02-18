@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button, message, Modal, Card, Spin, Tabs, Badge } from "antd";
-import {
-  EyeOutlined,
-  DownloadOutlined,
+import { 
+  EyeOutlined, 
+  DownloadOutlined, 
   ArrowLeftOutlined,
   FilePdfOutlined,
   UserOutlined,
@@ -12,13 +12,10 @@ import {
   MailOutlined,
   HomeOutlined,
   FileTextOutlined,
-  UploadOutlined,
+  UploadOutlined
 } from "@ant-design/icons";
 import { GetPatientDetails } from "../../apicalls/users";
-import {
-  fetchUserRecords,
-  fetchPatientUploadedRecords,
-} from "../../apicalls/recordpdf";
+import { fetchUserRecords, fetchPatientUploadedRecords } from "../../apicalls/recordpdf";
 import moment from "moment";
 
 function PatientRecordsPage() {
@@ -51,16 +48,16 @@ function PatientRecordsPage() {
   const fetchAllRecords = useCallback(async () => {
     try {
       if (!patientId) return;
-
+      
       const [prescribed, uploaded] = await Promise.all([
         fetchUserRecords(patientId),
-        fetchPatientUploadedRecords(patientId),
+        fetchPatientUploadedRecords(patientId)
       ]);
 
       if (Array.isArray(prescribed)) {
         setPrescribedRecords(prescribed);
       }
-
+      
       if (Array.isArray(uploaded)) {
         setUploadedRecords(uploaded);
       }
@@ -89,9 +86,9 @@ function PatientRecordsPage() {
   };
 
   const handleDownload = (fileUrl, fileName) => {
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = fileUrl;
-    link.download = fileName || "download";
+    link.download = fileName || 'download';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -110,10 +107,10 @@ function PatientRecordsPage() {
   const RecordsList = ({ records, source }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
       {records.map((record, index) => (
-        <Card
+        <Card 
           key={index}
           className="hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden transform hover:-translate-y-1"
-          bodyStyle={{ padding: "20px" }}
+          bodyStyle={{ padding: '20px' }}
         >
           <div className="flex flex-col h-full">
             <div className="flex-grow">
@@ -130,8 +127,8 @@ function PatientRecordsPage() {
                   <CalendarOutlined className="mr-2 text-blue-400" />
                   {formatDate(record.createdAt)}
                 </p>
-                <Badge
-                  color={source === "Doctor Prescribed" ? "blue" : "green"}
+                <Badge 
+                  color={source === "Doctor Prescribed" ? "blue" : "green"} 
                   text={source}
                   className="mb-2"
                 />
@@ -171,8 +168,8 @@ function PatientRecordsPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm backdrop-blur-sm bg-white/80">
         <div className="flex items-center space-x-4">
-          <Button
-            icon={<ArrowLeftOutlined />}
+          <Button 
+            icon={<ArrowLeftOutlined />} 
             onClick={handleBack}
             type="default"
             size="large"
@@ -180,14 +177,12 @@ function PatientRecordsPage() {
           >
             Back
           </Button>
-          <h1 className="text-2xl font-bold m-0 text-gray-800">
-            Patient Records
-          </h1>
+          <h1 className="text-2xl font-bold m-0 text-gray-800">Patient Records</h1>
         </div>
       </div>
 
       {/* Patient Information Card */}
-      <Card
+      <Card 
         className="mb-6 shadow-sm hover:shadow-md transition-shadow backdrop-blur-sm bg-white/80"
         title={
           <div className="flex items-center text-lg font-semibold text-gray-800">
@@ -200,47 +195,18 @@ function PatientRecordsPage() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            {
-              icon: <UserOutlined />,
-              label: "Name",
-              value: `${patientData?.FirstName} ${patientData?.LastName}`,
-            },
-            {
-              icon: <CalendarOutlined />,
-              label: "DOB",
-              value: patientData?.DOB
-                ? moment(patientData.DOB).format("DD-MM-YYYY")
-                : "N/A",
-            },
-            {
-              icon: <UserOutlined />,
-              label: "Gender",
-              value: patientData?.gender === 1 ? "Male" : "Female",
-            },
-            {
-              icon: <PhoneOutlined />,
-              label: "Phone",
-              value: patientData?.phone || "N/A",
-            },
-            {
-              icon: <MailOutlined />,
-              label: "Email",
-              value: patientData?.email || "N/A",
-            },
-            {
-              icon: <HomeOutlined />,
-              label: "Address",
-              value: patientData?.address || "N/A",
-            },
+            { icon: <UserOutlined />, label: "Name", value: `${patientData?.FirstName} ${patientData?.LastName}` },
+            { icon: <CalendarOutlined />, label: "DOB", value: patientData?.DOB ? moment(patientData.DOB).format("DD-MM-YYYY") : "N/A" },
+            { icon: <UserOutlined />, label: "Gender", value: patientData?.gender === 1 ? "Male" : "Female" },
+            { icon: <PhoneOutlined />, label: "Phone", value: patientData?.phone || "N/A" },
+            { icon: <MailOutlined />, label: "Email", value: patientData?.email || "N/A" },
+            { icon: <HomeOutlined />, label: "Address", value: patientData?.address || "N/A" }
           ].map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center space-x-2 bg-gray-50 p-3 rounded-lg"
-            >
+            <div key={index} className="flex items-center space-x-2 bg-gray-50 p-3 rounded-lg">
               <div className="bg-blue-50 p-2 rounded-lg">
                 <span className="text-blue-500">{item.icon}</span>
               </div>
-              <span className="font-medium">{item.label}:</span>
+              <span className="font-medium">{item.label}:</span> 
               <span className="truncate">{item.value}</span>
             </div>
           ))}
@@ -257,46 +223,34 @@ function PatientRecordsPage() {
         ) : prescribedRecords.length === 0 && uploadedRecords.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FilePdfOutlined style={{ fontSize: "32px", color: "#666" }} />
+              <FilePdfOutlined style={{ fontSize: '32px', color: '#666' }} />
             </div>
-            <p className="mt-4 text-gray-500 text-lg">
-              No records found for this patient
-            </p>
+            <p className="mt-4 text-gray-500 text-lg">No records found for this patient</p>
           </div>
         ) : (
           <Tabs
             defaultActiveKey="prescribed"
             items={[
               {
-                key: "prescribed",
+                key: 'prescribed',
                 label: (
                   <span className="flex items-center">
                     <FileTextOutlined className="mr-2" />
                     Prescribed Records ({prescribedRecords.length})
                   </span>
                 ),
-                children: (
-                  <RecordsList
-                    records={prescribedRecords}
-                    source="Doctor Prescribed"
-                  />
-                ),
+                children: <RecordsList records={prescribedRecords} source="Doctor Prescribed" />
               },
               {
-                key: "uploaded",
+                key: 'uploaded',
                 label: (
                   <span className="flex items-center">
                     <UploadOutlined className="mr-2" />
                     Patient Uploaded Records ({uploadedRecords.length})
                   </span>
                 ),
-                children: (
-                  <RecordsList
-                    records={uploadedRecords}
-                    source="Patient Uploaded"
-                  />
-                ),
-              },
+                children: <RecordsList records={uploadedRecords} source="Patient Uploaded" />
+              }
             ]}
             className="custom-tabs"
           />
@@ -317,7 +271,7 @@ function PatientRecordsPage() {
         onCancel={() => setPreviewVisible(false)}
         width="80%"
         footer={null}
-        bodyStyle={{ height: "80vh", padding: 0 }}
+        bodyStyle={{ height: '80vh', padding: 0 }}
         className="pdf-preview-modal"
       >
         <iframe
@@ -325,7 +279,7 @@ function PatientRecordsPage() {
           title="PDF Preview"
           width="100%"
           height="100%"
-          style={{ border: "none" }}
+          style={{ border: 'none' }}
         />
       </Modal>
 
@@ -333,26 +287,26 @@ function PatientRecordsPage() {
         .custom-tabs .ant-tabs-nav {
           margin-bottom: 20px;
         }
-
+        
         .custom-tabs .ant-tabs-tab {
           padding: 12px 16px;
           transition: all 0.3s;
         }
-
+        
         .custom-tabs .ant-tabs-tab:hover {
           color: #1890ff;
         }
-
+        
         .custom-tabs .ant-tabs-tab.ant-tabs-tab-active {
           background: #e6f7ff;
           border-radius: 4px;
         }
-
+        
         .pdf-preview-modal .ant-modal-content {
           border-radius: 8px;
           overflow: hidden;
         }
-
+        
         .pdf-preview-modal .ant-modal-header {
           padding: 16px 24px;
           border-bottom: 1px solid #f0f0f0;

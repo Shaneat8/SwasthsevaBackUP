@@ -17,7 +17,7 @@ const Records = () => {
   const [uploading, setUploading] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
-
+  
   useEffect(() => {
     const initialize = async () => {
       if (!user?.id) {
