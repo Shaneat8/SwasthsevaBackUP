@@ -14,7 +14,14 @@ function Doctor() {
   const [alreadyApplied,setAlreadyApplied]=React.useState(false);
   const dispatch=useDispatch();
   const nav=useNavigate();
+  const [error, setError] = useState('');
+
   const onFinish = async(values) => {
+    if (days.length === 0) {
+      setError('At least one day must be selected.');
+      return; // Prevent form submission
+    }
+    setError(''); // Clear error if validation passes  
     try {
       dispatch(ShowLoader(true));
       const payload={
@@ -143,13 +150,11 @@ function Doctor() {
               label="Phone"
               name="phone"
               rules={[
-                {
-                  required: true,
-                  message: "Required",
-                },
+                { required: true, message: "Required"},
+                { pattern: /^[0-9]{10}$/,message: "Enter a valid 10-digit phone number"},
               ]}
             >
-              <Input type="number" maxLength={10}/>
+              <Input type="text" maxLength={10}/>
             </Form.Item>
           </Col>
 
@@ -162,9 +167,10 @@ function Doctor() {
                   required: true,
                   message: "Required",
                 },
+                { pattern: /^[0-9]{10}$/,message: "Enter a valid 10-digit phone number"},
               ]}
             >
-              <Input type="number" maxLength={5}/>
+              <Input type="text" maxLength={5}/>
             </Form.Item>
           </Col>
 
@@ -343,6 +349,7 @@ function Doctor() {
                 </div>
               ))}
             </div>
+            {error && <div style={{ color: 'red' }}>{error}</div>}
           </Col>
         </Row>
 
