@@ -111,7 +111,7 @@ const TicketForm = () => {
                 
                 <div class="info-label">Query Type: ${queryType}</div>
 
-                <div class="info-label">Priority: &nbsp;
+                <div class="info-label">Priority:
                 <p class="priority-badge priority-${priority.toLowerCase()}">${priority}</p></div>
 
                 <div class="info-label">Query Details:</div>
