@@ -100,3 +100,66 @@ export const AddMedicineDiagnosis = async (payload) => {
     };
   }
 };
+
+export const updateMedicineQuantity = async (prescribedMedicines) => {
+  try {
+    // Validate input
+    if (!Array.isArray(prescribedMedicines)) {
+      throw new Error("Invalid prescribed medicines data");
+    }
+
+    const updates = await Promise.all(
+      prescribedMedicines.map(async (medicine) => {
+        // Calculate total quantity prescribed
+        const morning = Number(medicine.morning || 0);
+        const afternoon = Number(medicine.afternoon || 0);
+        const night = Number(medicine.night || 0);
+        const days = Number(medicine.days || 0);
+        const totalPrescribed = (morning + afternoon + night) * days;
+
+        // Get current medicine data
+        const medicineRef = doc(firestoredb, "medicine", medicine.medicineId);
+        const medicineSnap = await getDoc(medicineRef);
+
+        if (!medicineSnap.exists()) {
+          throw new Error(`Medicine with ID ${medicine.medicineId} not found`);
+        }
+
+        const currentData = medicineSnap.data();
+        const currentQuantity = Number(currentData.quantity || 0);
+
+        // Validate if enough quantity is available
+        if (currentQuantity < totalPrescribed) {
+          throw new Error(
+            `Insufficient quantity for medicine ${currentData.medicineName}. Available: ${currentQuantity}, Required: ${totalPrescribed}`
+          );
+        }
+
+        // Update quantity
+        const newQuantity = currentQuantity - totalPrescribed;
+        await updateDoc(medicineRef, {
+          quantity: newQuantity,
+          lastUpdated: new Date().toISOString()
+        });
+
+        return {
+          medicineId: medicine.medicineId,
+          medicineName: currentData.medicineName,
+          quantityReduced: totalPrescribed,
+          remainingQuantity: newQuantity
+        };
+      })
+    );
+
+    return {
+      success: true,
+      message: "Medicine quantities updated successfully",
+      updates: updates
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+};

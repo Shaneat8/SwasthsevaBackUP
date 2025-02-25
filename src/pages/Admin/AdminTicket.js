@@ -1,19 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Modal, Input, Timeline, Card, Descriptions, Space, message, Divider } from 'antd';
-import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Table, Tag, Button, Modal, Input, Timeline, Card, Descriptions, Space, message, Divider, DatePicker, Select } from 'antd';
+import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { collection, query, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import firestoredb from '../../firebaseConfig';
 import axios from 'axios';
+import Fuse from 'fuse.js';
 
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const AdminTicket = () => {
   const [tickets, setTickets] = useState([]);
+  const [filteredTickets, setFilteredTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [response, setResponse] = useState('');
   const [isResponseModalVisible, setIsResponseModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [queryTypeFilter, setQueryTypeFilter] = useState('all');
+  // Search and filter states
+  const [searchText, setSearchText] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
+
+  // Fuse.js instance
+  const fuse = useMemo(() => {
+    const fuseOptions = {
+      keys: [
+        'ticketId',
+        'email',
+        'subject',
+        'description',
+        'queryType'
+      ],
+      threshold: 0.3, // Adjust this value to control fuzzy matching sensitivity
+      includeScore: true
+    };
+    return new Fuse(tickets, fuseOptions);
+  }, [tickets]);
 
   useEffect(() => {
     const q = query(collection(firestoredb, 'tickets'));
@@ -134,13 +160,203 @@ const AdminTicket = () => {
   const getStatusColor = (status) => {
     const colors = {
       open: 'blue',
-      'in-progress': 'orange',
       resolved: 'green',
       reopened: 'purple',
       closed: 'default'
     };
     return colors[status] || 'default';
   };
+
+  // Enhanced filter and search functions
+  const applyFilters =useCallback( () => {
+    let filtered = [...tickets];
+
+    // Use Fuse.js for search if there's search text
+    if (searchText) {
+      const searchResults = fuse.search(searchText);
+      filtered = searchResults.map(result => result.item);
+    }
+
+    // Priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(ticket => 
+        ticket.priority.toLowerCase() === priorityFilter.toLowerCase()
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(ticket => 
+        ticket.status === statusFilter
+      );
+    }
+
+    // Query Type filter
+    if (queryTypeFilter !== 'all') {
+      filtered = filtered.filter(ticket => 
+        ticket.queryType === queryTypeFilter
+      );
+    }
+
+    // Date range filter
+    if (dateRange) {
+      const [startDate, endDate] = dateRange;
+      filtered = filtered.filter(ticket => {
+        const ticketDate = ticket.createdAt.toDate();
+        return ticketDate >= startDate && ticketDate <= endDate;
+      });
+    }
+
+    setFilteredTickets(filtered);
+  },[dateRange,fuse,priorityFilter,queryTypeFilter,searchText,statusFilter,tickets]);
+
+  // Apply filters whenever filter states change
+  useEffect(() => {
+    applyFilters();
+  }, [tickets, searchText, priorityFilter, statusFilter, dateRange,applyFilters]);
+
+  const resetFilters = () => {
+    setSearchText('');
+    setPriorityFilter('all');
+    setStatusFilter('all');
+    setQueryTypeFilter('all');
+    setDateRange(null);
+  };
+
+  // Enhanced SearchBar component with debounce
+  const SearchBar = () => {
+    const [localSearch, setLocalSearch] = useState(searchText);
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setSearchText(localSearch);
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timer);
+    }, [localSearch]);
+
+    return (
+      <Input
+        placeholder="Search tickets..."
+        allowClear
+        value={localSearch}
+        onChange={e => setLocalSearch(e.target.value)}
+        className="h-10 search-input" 
+        suffix={<SearchOutlined/>}
+      />
+    );
+  };
+
+  // Filter section with search suggestions
+  const FilterSection = () => {
+    // Get unique values for quick filters
+    const uniquePriorities = [...new Set(tickets.map(t => t.priority))];
+    const uniqueQueryTypes = [...new Set(tickets.map(t => t.queryType))].filter(Boolean);
+  
+    return (
+      <div className="bg-white p-4 mb-4 rounded-lg shadow">
+        <div className="flex items-center gap-4 h-10">
+          {/* Enhanced Search */}
+          <div className="flex-1">
+            <SearchBar/>
+          </div>
+  
+          {/* Priority Filter */}
+          <Select
+            value={priorityFilter}
+            onChange={setPriorityFilter}
+            className="w-32"
+            placeholder="Filter by Priority"
+            style={{ height: '40px' }}
+          >
+            <Option value="all">All Priorities</Option>
+            {uniquePriorities.map(priority => (
+              <Option key={priority} value={priority.toLowerCase()}>
+                {priority}
+              </Option>
+            ))}
+          </Select>
+  
+          {/* Status Filter */}
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            className="w-32"
+            placeholder="Filter by Status"
+            style={{ height: '40px' }}
+          >
+            <Option value="all">All Statuses</Option>
+            <Option value="open">Open</Option>
+            <Option value="resolved">Resolved</Option>
+            <Option value="closed">Closed</Option>
+          </Select>
+          
+          {/* Query Type Filter */}
+          <Select
+            value={queryTypeFilter}
+            onChange={setQueryTypeFilter}
+            className="w-48"
+            placeholder="Query Type"
+            style={{ height: '40px' }}
+          >
+            <Option value="all">All Types</Option>
+            {uniqueQueryTypes.map(type => (
+              <Option key={type} value={type}>
+                {type}
+              </Option>
+            ))}
+          </Select>
+  
+          {/* Date Range Filter */}
+          <RangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            className="w-64"
+            style={{ height: '40px' }}
+          />
+  
+          {/* Reset Filters */}
+          <Button 
+            onClick={resetFilters}
+            icon={<FilterOutlined />}
+            className="w-32"
+            style={{ height: '40px' }}
+          >
+            Reset
+          </Button>
+        </div>
+  
+        {/* Quick Stats */}
+        <div className="mt-4 grid grid-cols-4 gap-4">
+          <Card size="small" className="bg-blue-50">
+            <p className="text-sm text-gray-600">Open Tickets</p>
+            <p className="text-xl font-bold">{tickets.filter(t => t.status === 'open').length}</p>
+          </Card>
+          <Card size="small" className="bg-yellow-50">
+            <p className="text-sm text-gray-600">High Priority</p>
+            <p className="text-xl font-bold">{tickets.filter(t => t.priority?.toLowerCase() === 'high').length}</p>
+          </Card>
+          <Card size="small" className="bg-green-50">
+            <p className="text-sm text-gray-600">Resolved Today</p>
+            <p className="text-xl font-bold">
+              {tickets.filter(t => {
+                if (!t.lastUpdated) return false;
+                const today = new Date();
+                const updateDate = t.lastUpdated.toDate();
+                return t.status === 'resolved' && 
+                       updateDate.toDateString() === today.toDateString();
+              }).length}
+            </p>
+          </Card>
+          <Card size="small" className="bg-purple-50">
+            <p className="text-sm text-gray-600">Total Tickets</p>
+            <p className="text-xl font-bold">{tickets.length}</p>
+          </Card>
+        </div>
+      </div>
+    );
+  };
+
 
   const columns = [
     {
@@ -223,13 +439,22 @@ const AdminTicket = () => {
   };
 
   return (
-    <div className="p-4">
-      <Table
-        columns={columns}
-        dataSource={tickets}
-        rowKey="id"
-        className="mb-4"
-      />
+    <div className="p-4 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Ticket Management</h1>
+        
+        {/* Filter Section */}
+        <FilterSection />
+
+        {/* Tickets Table */}
+        <div className="bg-white rounded-lg shadow">
+          <Table
+            columns={columns}
+            dataSource={filteredTickets}
+            rowKey="id"
+            className="mb-4"
+          />
+        </div>
 
       {/* View Ticket Modal */}
       <Modal
@@ -289,7 +514,7 @@ const AdminTicket = () => {
 
             <Divider className="my-6" />      
 
-            <Timeline className="mt-4">
+            <Timeline style={{ marginLeft: '20px' }} className="mt-4">
               <Timeline.Item dot={getStatusIcon('open')}>
                 <Card size="small" className="bg-gray-50">
                   <h4 className="font-medium">Initial Query</h4>
@@ -354,6 +579,7 @@ const AdminTicket = () => {
           placeholder="Type your response..."
         />
       </Modal>
+      </div>
     </div>
   );
 };

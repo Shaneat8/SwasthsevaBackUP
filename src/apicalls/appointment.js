@@ -352,3 +352,41 @@ export const UpdateRescheduleResponse = async (appointmentId, response) => {
   }
 };
 
+export const GetDoctorAppointmentsByDoctorId = async (doctorId) => {
+  if (!doctorId) {
+    return {
+      success: false,
+      message: "Doctor ID is required",
+    };
+  }
+
+  try {
+    const appointmentsQuery = query(
+      collection(firestoredb, "appointments"),
+      where("doctorId", "==", doctorId)
+    );
+
+    const querySnapshot = await getDocs(appointmentsQuery);
+    const appointments = [];
+
+    querySnapshot.forEach((doc) => {
+      appointments.push({
+        ...doc.data(),
+        id: doc.id,
+      });
+    });
+
+    console.log("Appointments fetched:", appointments);
+
+    return {
+      success: true,
+      data: appointments,
+    };
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};

@@ -1,25 +1,28 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body, html {
+body,
+html {
   background-color: #d6d3d3;
   font-family: "Montserrat", sans-serif !important;
 }
 
 * {
-  margin: 0; 
+  margin: 0;
   padding: 0;
   box-sizing: border-box;
-  border-radius:4px;
+  border-radius: 4px;
   font-family: "Montserrat", sans-serif !important;
-  
 }
 
-.text-primary{
-  color: #5C2E7E;
+.text-primary {
+  color: #5c2e7e;
 }
 
-.text-secondary{
-  color: #8BBCCC;
+.text-secondary {
+  color: #8bbccc;
 }
 
 /* flex classes */
@@ -30,24 +33,24 @@ body, html {
   flex-direction: column;
 }
 
-.justify-between{
+.justify-between {
   justify-content: space-between;
 }
 .justify-center {
   justify-content: center;
 }
-.justify-end{
+.justify-end {
   justify-content: end;
 }
 .items-center {
   align-items: center;
 }
 
-.items-end{
+.items-end {
   align-items: flex-end;
 }
 
-.bg-white{
+.bg-white {
   background-color: white;
   box-shadow: 0 0 2px 0 #d3d2d2;
   border-radius: 4px;
@@ -57,8 +60,8 @@ body, html {
 .h-screen {
   height: 100vh;
 }
-.h-1{
-  height:50px;
+.h-1 {
+  height: 50px;
 }
 .w-400 {
   width: 400px;
@@ -67,11 +70,11 @@ body, html {
   width: 350px;
 }
 
-.w-full{
+.w-full {
   width: 100%;
 }
 
-.w-half{
+.w-half {
   width: 60%;
 }
 
@@ -97,43 +100,42 @@ body, html {
   margin: 30px;
 }
 
-.py-1{
+.py-1 {
   padding-top: 10px;
   padding-bottom: 10px;
 }
 
-.py-1{
+.py-1 {
   padding-top: 20px;
   padding-bottom: 20px;
 }
 
-.py-3{
+.py-3 {
   padding-top: 30px;
   padding-bottom: 30px;
 }
 
-.my-0_4
-{
+.my-0_4 {
   margin-top: 4px;
   margin-bottom: 4px;
 }
 
-.my-1{
+.my-1 {
   margin-top: 10px;
   margin-bottom: 10px;
 }
 
-.my-1_5{
+.my-1_5 {
   margin-top: 15px;
   margin-bottom: 15px;
 }
 
-.my-2{
+.my-2 {
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
-.my-3{
+.my-3 {
   margin-top: 30px;
   margin-bottom: 30px;
 }
@@ -173,7 +175,7 @@ input:focus {
   height: 50px;
   border-radius: 4px;
   background-color: white;
-  color: #2992d6; 
+  color: #2992d6;
   border: 1px solid #2992d6;
   text-transform: uppercase;
   font-weight: 600;
@@ -193,35 +195,40 @@ input:focus {
   text-transform: uppercase;
 }
 
-.cursor-pointer{
+.cursor-pointer {
   cursor: pointer;
 }
 
-
-.underline{
+.underline {
   text-decoration: underline;
 }
 
-a,p,h1,h2,h3,h4,h5{
+a,
+p,
+h1,
+h2,
+h3,
+h4,
+h5 {
   color: #363636 !important;
   font-weight: 600;
 }
 
-.gap-0_5{
-  gap:5px;
+.gap-0_5 {
+  gap: 5px;
 }
-.gap-1{
+.gap-1 {
   gap: 10px;
 }
-.gap-2{
+.gap-2 {
   gap: 20px;
 }
-.gap-3{
+.gap-3 {
   gap: 30px;
 }
 
 /*Spinner*/
-.spinner-parent{
+.spinner-parent {
   position: fixed;
   inset: 0;
   display: flex;
@@ -232,50 +239,49 @@ a,p,h1,h2,h3,h4,h5{
   background-color: #000000b5;
 }
 
-.loading{
+.loading {
   font-size: 14px;
 }
 
 .search-input {
   display: flex;
-  align-items: center
+  align-items: center;
 }
 
-.auth-links{
+.auth-links {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
 }
 
-.forgot{
+.forgot {
   cursor: pointer;
   text-decoration: underline;
   text-align: right;
-  color:#2186c9 !important;
+  color: #2186c9 !important;
 }
 
-.already{
+.already {
   text-decoration: underline;
   text-align: left;
 }
 
-.color{
+.color {
   font-size: 15px;
   text-align: center;
   text-decoration: underline;
 }
 
-hr{
+hr {
   border: 1px solid #d3d2d2;
 }
 
-.b-rd
-{
+.b-rd {
   border-radius: 2px;
 }
 
-.icons{
+.icons {
   display: flex;
   justify-content: center;
   gap: 35px;
@@ -292,7 +298,7 @@ hr{
   box-sizing: border-box;
   color: #1f1f1f;
   cursor: pointer;
-  font-family: 'Roboto', arial, sans-serif;
+  font-family: "Roboto", arial, sans-serif;
   font-size: 16px;
   font-weight: 450;
   height: 40px;
@@ -302,8 +308,9 @@ hr{
   padding: 0 12px;
   position: relative;
   text-align: center;
-  -webkit-transition: background-color .218s, border-color .218s, box-shadow .218s;
-  transition: background-color .218s, border-color .218s, box-shadow .218s;
+  -webkit-transition: background-color 0.218s, border-color 0.218s,
+    box-shadow 0.218s;
+  transition: background-color 0.218s, border-color 0.218s, box-shadow 0.218s;
   vertical-align: middle;
   white-space: nowrap;
   width: 100%;
@@ -315,8 +322,10 @@ hr{
 }
 
 .custom-google-button:hover {
-  -webkit-box-shadow: 0 1px 2px 0 rgba(102, 149, 185, 0.3), 0 1px 3px 1px rgba(60, 64, 67, .15);
-  box-shadow: 0 1px 2px 0 rgba(77, 163, 228, 0.3), 0 1px 3px 1px rgba(55, 133, 192, 0.15);
+  -webkit-box-shadow: 0 1px 2px 0 rgba(102, 149, 185, 0.3),
+    0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  box-shadow: 0 1px 2px 0 rgba(77, 163, 228, 0.3),
+    0 1px 3px 1px rgba(55, 133, 192, 0.15);
 }
 
 .custom-google-button-content {

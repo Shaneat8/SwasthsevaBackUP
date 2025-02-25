@@ -6,29 +6,34 @@ import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { auth, googleProvider } from "../../firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
-import { Divider } from 'antd';
 import { FcGoogle } from "react-icons/fc";
+import styles from './Login.module.css';
 
 function Login() {
-  const nav=useNavigate();
-  const dispatch=useDispatch();
-  const onFinish=async(values)=>
-  {
+  const nav = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleLoginSuccess = (userData) => {
+    localStorage.setItem("user", JSON.stringify({
+      ...userData,
+      password: "",
+    }));
+    if (userData.role === "admin") {
+      nav("/AdminView");
+    } else {
+      nav("/");
+    }
+  };
+
+  const onFinish = async (values) => {
     try {
       dispatch(ShowLoader(true));
-      const log1=await LoginUser(values);
+      const log1 = await LoginUser(values);
       dispatch(ShowLoader(false));
-      if(log1.success)
-      {
+      if (log1.success) {
         message.success(log1.message);
-        localStorage.setItem("user",JSON.stringify({
-          ...log1.data,
-          password:"",
-        }));
-        nav("/"); 
-      }
-      
-      else{
+        handleLoginSuccess(log1.data);
+      } else {
         throw new Error(log1.message);
       }
     } catch (error) {
@@ -36,31 +41,30 @@ function Login() {
       message.error(error.message);
     }
   };
-  
-  useEffect(()=>{
-    const user=JSON.parse(localStorage.getItem('user'));
-    if(user) nav("/");
-  },[nav]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      if (user.role === "admin") {
+        nav("/AdminView");
+      } else {
+        nav("/");
+      }
+    }
+  }, [nav]);
 
   const handleGoogleSignIn = async () => {
     try {
       dispatch(ShowLoader(true));
-      // Use signInWithRedirect 
-      const result=await signInWithPopup(auth, googleProvider);
-      const user=result.user;
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
 
-      const GoogleLogin=await LoginUser({email:user.email},true);
-      
-      if(GoogleLogin.success)
-      {
+      const GoogleLogin = await LoginUser({ email: user.email }, true);
+
+      if (GoogleLogin.success) {
         message.success(GoogleLogin.message);
-        localStorage.setItem("user",JSON.stringify({
-          ...GoogleLogin.data,
-          password:"",
-        }));
-        nav("/");
-      }
-      else{
+        handleLoginSuccess(GoogleLogin.data);
+      } else {
         throw new Error(GoogleLogin.message);
       }
       dispatch(ShowLoader(false));
@@ -68,63 +72,80 @@ function Login() {
       dispatch(ShowLoader(false));
       message.error(error.message);
       nav("/register");
-    } 
+    }
   };
 
-
-
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="bg-white p-3 w-400 shadow-lg rounded">
-        <h2 className="text-center uppercase my-2">Swasthya Seva Login</h2><hr/><br/>
-        <Form layout="vertical" onFinish={onFinish}> 
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[{ required: true, message: "Please enter your email!" }]}
-          >
-            <Input type="email" placeholder="Enter your email" />
-          </Form.Item>
+    <div className={styles.container}>
+      <div className={styles.part}>
+        <div className={styles.left}>
+          {/* Background image will be handled by CSS */}
+        </div>
+        <div className={styles.right}>
+          <div className={styles.formContainer}>
+            <h2 className={styles.heading}>Swasthya Seva</h2>
+            
+            <Form layout="vertical" onFinish={onFinish} className={styles.loginForm}>
+              <Form.Item
+                label="Email or phone number"
+                name="email"
+                rules={[{ required: true, message: "Please enter your email!" }]}
+              >
+                <Input 
+                  type="email" 
+                  placeholder="Email or phone number"
+                />
+              </Form.Item>
 
-          <Form.Item
-            label="Password"
-            name="password"
-            rules={[{ required: true, message: "Please enter your password!" }]}
-          >
-            <Input.Password placeholder="Enter your password" />
-          </Form.Item>
-          
+              <Form.Item
+                label="Password"
+                name="password"
+                rules={[{ required: true, message: "Please enter your password!" }]}
+              >
+                <Input.Password 
+                  placeholder="Enter password"
+                />
+              </Form.Item>
 
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              className="contained-button"
-              block
-            >
-              Login
-            </Button>
-          </Form.Item>
+              <div className={styles.forgotPassword}>
+                <Link to="/forgot">Forgot password?</Link>
+              </div>
 
-          <Divider style={{ borderColor: '#d3d2d2' }}>OR</Divider>
+              <Form.Item>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  block
+                  className="bg-blue-500 h-12 rounded-lg"
+                >
+                  Login
+                </Button>
+              </Form.Item>
 
-          <button className="custom-google-button" onClick={handleGoogleSignIn}>
-            <div className="custom-google-button-content">
-              <FcGoogle className="custom-google-icon" />
-              <span>Sign in with Google</span>
-            </div>
-          </button>
+              <div className={styles.orSeparator}>
+                <div className={styles.line}></div>
+                <span className={styles.orText}>or</span>
+                <div className={styles.line}></div>
+              </div>
 
-          <br/> 
-          <div className="auth-links">
-           <Link className="already" to="/register">
-            Don't have an account? <strong>Register</strong>
-           </Link>
-            <Link className="forgot" to="/forgot">
-            Forgot Password
-          </Link>
+              <button 
+                className={styles.googleBtn} 
+                onClick={handleGoogleSignIn}
+                type="button"
+              >
+                <FcGoogle className={styles.googleIcon} />
+                <span>Sign in with Google</span>
+              </button>
+
+              <div className={styles.createAccount}>
+                Don't have an account?{' '}
+                <Link to="/register" className="text-blue-500 hover:text-blue-600">
+                  Sign up now
+                </Link>
+              </div>
+            </Form>
           </div>
-        </Form>
+        </div>
       </div>
     </div>
   );

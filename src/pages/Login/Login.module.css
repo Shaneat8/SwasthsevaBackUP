@@ -1,0 +1,192 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow: hidden;
+  /* background-color: #f5f5f5; */
+  background-image: url('../images/lbg.png');
+  background-size: 100% 100%;
+  
+  
+}
+
+.part {
+  position: relative;
+  width: 70%;
+  height: auto;
+  min-height: 600px;
+  max-width: 1250px;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  color: black;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 0;
+  z-index: 2;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.left {
+  position: relative;
+  width: 60%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.right {
+  position: relative;
+  width: 40%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 40px;
+  background: transparent;
+}
+
+/* Add a background container that spans both left and right sides */
+.part::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../images/new_login_bg.png');
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
+
+/* Add an overlay to the right side to make content more readable */
+.right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: -1;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Rest of your styles remain the same */
+.heading {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.loginForm {
+  width: 100%;
+}
+
+.loginForm :global(.ant-form-item-label > label) {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.forgotPassword {
+  text-align: right;
+  margin: -10px 0 20px;
+}
+
+.forgotPassword a {
+  color: #3b82f6;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.forgotPassword a:hover {
+  color: #2563eb;
+}
+
+.orSeparator {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.orText {
+  margin: 0 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.googleBtn {
+  width: 100%;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.googleBtn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.googleIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.createAccount {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.loginForm :global(.ant-btn-primary) {
+  background: #3b82f6;
+  border: none;
+}
+
+.loginForm :global(.ant-btn-primary:hover) {
+  background: #2563eb;
+}
+
+.loginForm :global(.ant-form-item) {
+  margin-bottom: 20px;
+}
+
+.loginForm :global(.ant-form-item-explain-error) {
+  font-size: 12px;
+  color: #ef4444;
+  text-align: left;
+}

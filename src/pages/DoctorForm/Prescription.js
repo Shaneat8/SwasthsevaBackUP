@@ -5,10 +5,14 @@ import { useDispatch } from "react-redux";
 import { Button, Col, Form, Input, message, Row, Select } from "antd";
 import moment from "moment";
 import { ShowLoader } from "../../redux/loaderSlice";
-import { AddMedicineDiagnosis, getMedicineList } from "../../apicalls/medicine";
+import { AddMedicineDiagnosis, getMedicineList, updateMedicineQuantity } from "../../apicalls/medicine";
 import "./Prescription.css";
 import { GetPatientDetails } from "../../apicalls/users";
-import { FolderOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  FolderOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import {
   GetAppointmentById,
   UpdateAppointmentStatus,
@@ -30,7 +34,7 @@ function Prescription() {
   const dispatch = useDispatch();
   const componentRef = useRef();
   const [existingPrescription, setExistingPrescription] = useState(null);
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const { appointmentId } = useParams();
 
   const handleViewRecords = () => {
@@ -40,7 +44,7 @@ function Prescription() {
         state: {
           appointmentId: appointmentId,
           returnPath: `/appointment/${appointmentId}`,
-          formData: formData, 
+          formData: formData,
         },
       });
     } else {
@@ -54,7 +58,7 @@ function Prescription() {
     try {
       dispatch(ShowLoader(true));
       const response = await GetAppointmentById(appointmentId);
-      
+
       if (response.success) {
         setAppointmentData(response.data);
         // Fetch patient details using the userId from appointment
@@ -64,15 +68,15 @@ function Prescription() {
           setPatientData(patientResponse.data);
         } else {
           message.error("Failed to fetch patient details");
-          navigate('/'); // Redirect to home if patient details can't be fetched
+          navigate("/"); // Redirect to home if patient details can't be fetched
         }
       } else {
         message.error("Invalid appointment");
-        navigate('/'); // Redirect to home if appointment is invalid
+        navigate("/"); // Redirect to home if appointment is invalid
       }
     } catch (error) {
       message.error(error.message);
-      navigate('/'); // Redirect to home if there's an error
+      navigate("/"); // Redirect to home if there's an error
     } finally {
       dispatch(ShowLoader(false));
     }
@@ -94,7 +98,7 @@ function Prescription() {
     } catch (error) {
       console.error("Error fetching prescription:", error);
     }
-  },[appointmentId,medicineForm]);
+  }, [appointmentId, medicineForm]);
 
   // Function to fetch medicine list
   const fetchMedicineList = useCallback(async () => {
@@ -312,6 +316,14 @@ function Prescription() {
           timestamp: new Date().toISOString(),
         };
 
+        const medicineUpdateResponse = await updateMedicineQuantity(
+          values.medicines
+        );
+        if (!medicineUpdateResponse.success) {
+          message.error(medicineUpdateResponse.message);
+          return;
+        }
+
         await addUserRecord(appointmentData.userId, recordData);
 
         // Download PDF
@@ -341,17 +353,17 @@ function Prescription() {
   return (
     <div className="prescription-container" ref={componentRef}>
       {/* Header */}
-      <div className="header" style={{ position: 'relative' }}>
+      <div className="header" style={{ position: "relative" }}>
         <h1>Patient Details</h1>
         <h2>OPD Receipt - Polyclinic</h2>
-        <Button 
+        <Button
           type="primary"
           icon={<FolderOutlined />}
           onClick={handleViewRecords}
-          style={{ 
-            position: 'absolute', 
-            top: '20px', 
-            right: '20px'
+          style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px",
           }}
         >
           View Patient Records
