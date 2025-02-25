@@ -11,6 +11,7 @@ import ResolvedComplaints from "./ResolvedComplaints";
 import { collection, getDocs, query } from "firebase/firestore";
 import firestoredb from "../../firebaseConfig";
 import Reports from "./Reports";
+import AdminTestManagement from "./TestManagement/AdminTestManagement";
 
 const EmptyState = ({ message }) => (
   <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
@@ -291,8 +292,8 @@ const AdminView = () => {
         return <MedicineList />;
       case "reports":
         return <Reports />; // Replace EmptyState with Reports component
-      case "settings":
-        return <EmptyState message="Settings feature coming soon" />;
+      case "tests":
+        return <AdminTestManagement />;
       default:
         return <Overview doctors={doctors} users={users} tickets={tickets} />;
     }
@@ -305,7 +306,7 @@ const AdminView = () => {
           <h2 className="text-2xl font-bold !text-white">Hospital Admin</h2>
         </div>
         <nav className="mt-5 px-3">
-          {["overview", "medicine", "reports", "settings"].map((section) => (
+          {["overview", "medicine", "reports", "tests"].map((section) => (
             <button
               key={section}
               className={`w-full px-3 py-3 text-left rounded-md transition-colors duration-200 ${
@@ -345,3 +346,4 @@ const AdminView = () => {
 };
 
 export default AdminView;
+
