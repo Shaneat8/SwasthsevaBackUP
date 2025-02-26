@@ -302,25 +302,20 @@ const AdminTestManagement = () => {
       return;
     }
   
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user?.id) {
-      message.error("Please log in to upload reports");
-      return;
-    }
-  
     try {
       setUploading(true);
   
       // Use the testId field from selectedLabTest
       const response = await UploadTestReport(
-        selectedLabTest.testId, // Use the testId field, not the document ID
-        pdfData.blob,           // PDF file
+        selectedLabTest.id, // Use the document ID for the lab test
+        pdfData.blob,      // PDF file blob
         selectedLabTest.userId  // Patient's ID
       );
   
       if (response && response.success) {
         message.success(response.message);
         setPdfPreviewVisible(false);
+        setTestResultModalVisible(false);
         fetchLabTests(); // Refresh the lab tests list
       } else {
         message.error(response?.message || "Failed to upload report");

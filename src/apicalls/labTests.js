@@ -229,162 +229,100 @@ export const UpdateLabTestResults = async (testId, resultData) => {
   }
 };
 
-export const UploadTestReport = async (testId, reportFile, userId) => {
+export const UploadTestReport = async (testId, pdfBlob, userId) => {
   try {
-    console.log("Received parameters:", { testId, reportFile, userId });
-
-    // Validate required parameters
-    if (!testId || !reportFile || !userId) {
+    // First, make sure we have a valid PDF blob
+    if (!pdfBlob || !testId || !userId) {
       return {
         success: false,
-        message: "Test ID, report file, and user ID are required",
+        message: "Missing required parameters for test report upload",
       };
     }
 
-    // Validate reportFile has a name
-    if (!reportFile.name) {
-      console.error("Report file name is undefined");
-      const fallbackName = `Report_${testId}_${new Date().toISOString()}.pdf`;
-      console.log(`Using fallback name: ${fallbackName}`);
-      reportFile.name = fallbackName;
-    }
-
-    // Ensure the file has a .pdf extension
-    if (!reportFile.name.toLowerCase().endsWith('.pdf')) {
-      const newName = reportFile.name + '.pdf';
-      console.log(`Adding .pdf extension to filename: ${newName}`);
-      
-      // Create a new File object with PDF extension and correct MIME type
-      // This requires converting the original file to a proper PDF File object
-      const fileData = await reportFile.arrayBuffer();
-      reportFile = new File([fileData], newName, { type: 'application/pdf' });
-    }
-
-    // Query Firestore to find the lab test document
-    const labTestsRef = collection(firestoredb, "labTests");
-    const q = query(
-      labTestsRef,
-      where("testId", "==", testId), // Match the testId field
-      where("userId", "==", userId)  // Match the userId field
-    );
-    const querySnapshot = await getDocs(q);
-
-    console.log("Query Snapshot:", querySnapshot);
-
-    if (querySnapshot.empty) {
-      console.log("No matching documents found in Firestore.");
+    // Check if pdfBlob is actually a PDF
+    if (!(pdfBlob instanceof Blob) || pdfBlob.type !== "application/pdf") {
+      console.error("Invalid PDF blob:", pdfBlob);
       return {
         success: false,
-        message: "Lab test not found",
+        message: "Invalid PDF format",
       };
     }
 
-    const labTest = {
-      id: querySnapshot.docs[0].id,
-      ...querySnapshot.docs[0].data(),
-    };
-    console.log("Lab Test Document:", labTest);
+    // Create a file from the blob with a proper name
+    const file = new File([pdfBlob], `test-report-${testId}.pdf`, {
+      type: "application/pdf",
+    });
 
-    // Upload to Cloudinary with specific PDF format
+    // Create form data for Cloudinary upload
     const formData = new FormData();
-    formData.append("file", reportFile);
-    formData.append("upload_preset", "Records");
-    formData.append("folder", `patient-records/${userId}/labreports`);
-    // Explicitly specify the resource type and file type for Cloudinary
-    formData.append("resource_type", "raw");
-    // Add this to force Cloudinary to treat it as a PDF
-    formData.append("format", "pdf");
+    formData.append("file", file);
+    formData.append("upload_preset", "Records"); // Your Cloudinary upload preset
+    formData.append("folder", `patient-reports/${userId}/lab-reports`); // Organize by user ID
 
+    // Upload to Cloudinary
     const uploadResponse = await fetch(
-      "https://api.cloudinary.com/v1_1/dagludyhc/raw/upload",
+      "https://api.cloudinary.com/v1_1/dagludyhc/auto/upload", // Use your Cloudinary cloud name
       {
         method: "POST",
         body: formData,
       }
     );
 
-    const uploadResult = await uploadResponse.json();
-
     if (!uploadResponse.ok) {
-      throw new Error(uploadResult.message || "Upload failed");
+      const errorData = await uploadResponse.json();
+      console.error("Cloudinary error details:", errorData);
+      throw new Error(errorData.error?.message || "Upload failed");
     }
 
-    console.log("Cloudinary upload result:", uploadResult);
+    const uploadResult = await uploadResponse.json();
 
-    // Create record data with all required fields
-    const recordData = {
-      name: reportFile.name, // Will now always have a value and end with .pdf
-      url: uploadResult.secure_url,
-      public_id: uploadResult.public_id,
-      userId: userId,
-      userEmail: labTest.userEmail || "Not provided",
-      userName: labTest.userName || "Not provided",
+    // Save the report data to Firestore under the user's lab-reports collection
+    const userLabReportsRef = collection(
+      firestoredb,
+      `patient-records/${userId}/lab-reports`
+    );
+    const reportData = {
       testId: testId,
-      testName: labTest.testName || "Unknown Test",
-      date: labTest.date || new Date().toISOString().split('T')[0],
-      timeSlot: labTest.timeSlot || "Not specified",
-      reportTime: labTest.reportTime || new Date().toISOString(),
-      type: "labreport",
-      source: "lab",
-      labTestId: labTest.id,
+      reportUrl: uploadResult.secure_url,
+      reportPublicId: uploadResult.public_id,
+      createdAt: serverTimestamp(),
       status: "completed",
-      fileType: "application/pdf",
-      fileSize: reportFile.size || 0,
-      uploadDate: new Date().toISOString(),
     };
 
-    console.log("Record data to be saved:", recordData);
+    // Add the report to the user's lab-reports collection
+    const docRef = await addDoc(userLabReportsRef, reportData);
 
-    // Save to Firestore in user's records collection
-    const userRecordsRef = collection(
-      firestoredb,
-      `patient-records/${userId}/user_records`
-    );
-    const docRef = await addDoc(userRecordsRef, {
-      ...recordData,
-      createdAt: serverTimestamp(),
+    // Also add the report to the centralized lab-reports collection
+    const labReportsRef = collection(firestoredb, "lab-reports");
+    await addDoc(labReportsRef, {
+      ...reportData,
+      userId: userId,
+      recordId: docRef.id, // Link to the user's specific report
     });
 
-    console.log("Document added to user_records with ID:", docRef.id);
-
-    // Also add to patientUploads collection for centralized access
-    const patientUploadsRef = collection(firestoredb, "patientUploads");
-    const centralDocRef = await addDoc(patientUploadsRef, {
-      ...recordData,
-      recordId: docRef.id,
-      createdAt: serverTimestamp(),
-    });
-
-    console.log("Document added to patientUploads with ID:", centralDocRef.id);
-
-    // Update the lab test status to 'completed'
-    const labTestDocRef = doc(firestoredb, "labTests", labTest.id);
-    await updateDoc(labTestDocRef, {
+    // Update the lab test document in Firebase with the report URL
+    const testDoc = doc(firestoredb, "labTests", testId);
+    await updateDoc(testDoc, {
       status: "completed",
       reportUrl: uploadResult.secure_url,
-      reportUploadDate: serverTimestamp(),
+      reportPublicId: uploadResult.public_id,
+      updatedAt: serverTimestamp(),
     });
 
-    console.log("Lab test updated with status completed");
-
-    // Return successful response
     return {
       success: true,
-      data: {
-        id: docRef.id,
-        centralId: centralDocRef.id,
-        ...recordData,
-      },
-      message: "Test report uploaded successfully as PDF",
+      message: "Test report uploaded successfully",
+      url: uploadResult.secure_url,
     };
   } catch (error) {
-    console.error("Error uploading test report:", error);
+    console.error("Error uploading test report:", error, "Blob type:", pdfBlob?.type);
     return {
       success: false,
-      message: error.message || "Error uploading test report",
+      message: "Failed to upload test report: " + error.message,
     };
   }
 };
+
 /**
  * Generate lab test result PDF
  * @param {string} testId - The ID of the lab test

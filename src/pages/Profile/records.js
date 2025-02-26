@@ -1,23 +1,31 @@
-// src/components/Records/Records.jsx
 import React, { useState, useEffect } from "react";
-import { Button, message, Upload } from "antd";
+import { Tabs, Button, message, Upload } from "antd";
 import { 
   UploadOutlined, 
   DownloadOutlined, 
   DeleteOutlined 
 } from "@ant-design/icons";
 import moment from 'moment';
-import { CheckProfileCompletion, GetUserById } from "../../apicalls/users"; // Import your existing user functions
-import { fetchUserRecords, addUserRecord, deleteUserRecord } from "../../apicalls/recordpdf";
+import { CheckProfileCompletion, GetUserById } from "../../apicalls/users";
+import { 
+  fetchUserRecords, 
+  fetchLabRecords, 
+  addUserRecord, 
+  addLabRecord, 
+  deleteUserRecord, 
+  deleteLabRecord 
+} from "../../apicalls/recordpdf";
 import "./records.css";
 
+const { TabPane } = Tabs;
 
 const Records = () => {
   const [records, setRecords] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
-  
+  const [activeTab, setActiveTab] = useState('patient-records');
+
   useEffect(() => {
     const initialize = async () => {
       if (!user?.id) {
@@ -37,8 +45,13 @@ const Records = () => {
           setUserProfile(userResponse.data);
         }
 
-        const recordsData = await fetchUserRecords(user.id);
-        setRecords(recordsData);
+        if (activeTab === 'patient-records') {
+          const recordsData = await fetchUserRecords(user.id);
+          setRecords(recordsData);
+        } else if (activeTab === 'lab-records') {
+          const labRecordsData = await fetchLabRecords(user.id);
+          setRecords(labRecordsData);
+        }
       } catch (error) {
         message.error("Error loading user data");
         console.error("Initialization error:", error);
@@ -46,16 +59,44 @@ const Records = () => {
     };
 
     initialize();
-  }, [user?.id]);
+  }, [user?.id, activeTab]);
 
+  // Enhanced download function to handle PDFs correctly
   const handleDownload = (fileUrl, fileName) => {
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName || 'download';
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Clean the URL by removing any trailing spaces
+    const cleanUrl = fileUrl.trim();
+    
+    // Fetch the file as a blob to ensure it downloads as a PDF
+    fetch(cleanUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        // Create an object URL from the blob
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName || 'download.pdf';
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up after download
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      })
+      .catch(error => {
+        console.error("Download failed:", error);
+        message.error("Failed to download file");
+        
+        // Fallback to direct link if blob download fails
+        const link = document.createElement('a');
+        link.href = cleanUrl;
+        link.download = fileName || 'download';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
   };
 
   const handleUpload = async ({ file }) => {
@@ -93,8 +134,13 @@ const Records = () => {
         email: user.email,
       };
 
-      const docRef = await addUserRecord(user.id, recordData);
-      
+      let docRef;
+      if (activeTab === 'patient-records') {
+        docRef = await addUserRecord(user.id, recordData);
+      } else if (activeTab === 'lab-records') {
+        docRef = await addLabRecord(user.id, recordData);
+      }
+
       // Create a new record object with the current timestamp
       const newRecord = {
         id: docRef.id,
@@ -140,7 +186,12 @@ const Records = () => {
         throw new Error(result.message || 'Delete failed');
       }
 
-      await deleteUserRecord(user.id, id);
+      if (activeTab === 'patient-records') {
+        await deleteUserRecord(user.id, id);
+      } else if (activeTab === 'lab-records') {
+        await deleteLabRecord(user.id, id);
+      }
+
       setRecords(prev => prev.filter(record => record.id !== id));
       message.success('File deleted successfully');
     } catch (error) {
@@ -149,6 +200,49 @@ const Records = () => {
     } finally {
       hide();
     }
+  };
+
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+  };
+
+  // Render a record row with appropriate field handling
+  const renderRecordRow = (record) => {
+    return (
+      <tr key={record.id}>
+        <td>
+          <a 
+            href={record.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            {record.name}
+          </a>
+        </td>
+        <td>
+          {record.createdAt ? 
+            moment(record.createdAt.toDate()).format('LL') : 
+            'N/A'
+          }
+        </td>
+        <td className="action-buttons">
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownload(record.url, record.name)}
+          >
+            Download
+          </Button>
+          <Button
+            type="default"
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id, record.public_id)}
+          >
+            Delete
+          </Button>
+        </td>
+      </tr>
+    );
   };
 
   if (!user?.id) {
@@ -173,75 +267,82 @@ const Records = () => {
     <div className="records-container">
       <h2>Your Medical Records</h2>
       
-      <Upload
-        customRequest={handleUpload}
-        showUploadList={false}
-        accept=".pdf"
-        className="upload-section"
-      >
-        <Button
-          icon={<UploadOutlined />}
-          loading={uploading}
-          disabled={uploading}
-          className="upload-button"
-        >
-          {uploading ? "Uploading..." : "Upload PDF"}
-        </Button>
-      </Upload>
+      <Tabs defaultActiveKey="patient-records" onChange={handleTabChange}>
+        <TabPane tab="Patient Records" key="patient-records">
+          <Upload
+            customRequest={handleUpload}
+            showUploadList={false}
+            accept=".pdf"
+            className="upload-section"
+          >
+            <Button
+              icon={<UploadOutlined />}
+              loading={uploading}
+              disabled={uploading}
+              className="upload-button"
+            >
+              {uploading ? "Uploading..." : "Upload PDF"}
+            </Button>
+          </Upload>
 
-      <div className="records-table-container">
-        <h3>Uploaded Files</h3>
-        {records.length === 0 ? (
-          <p>No records uploaded yet.</p>
-        ) : (
-          <table className="records-table">
-            <thead>
-              <tr>
-                <th>File Name</th>
-                <th>Upload Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <td>
-                    <a 
-                      href={record.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      {record.name}
-                    </a>
-                  </td>
-                  <td>
-                    {record.createdAt ? 
-                      moment(record.createdAt.toDate()).format('LL') : 
-                      'N/A'
-                    }
-                  </td>
-                  <td className="action-buttons">
-                    <Button
-                      type="primary"
-                      icon={<DownloadOutlined />}
-                      onClick={() => handleDownload(record.url, record.name)}
-                    >
-                      Download
-                    </Button>
-                    <Button
-                      type="default"
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleDelete(record.id, record.public_id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          <div className="records-table-container">
+            <h3>Uploaded Files</h3>
+            {records.length === 0 ? (
+              <p>No records uploaded yet.</p>
+            ) : (
+              <table className="records-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Upload Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map(record => renderRecordRow(record))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </TabPane>
+        <TabPane tab="Lab Records" key="lab-records">
+          <Upload
+            customRequest={handleUpload}
+            showUploadList={false}
+            accept=".pdf"
+            className="upload-section"
+          >
+            <Button
+              icon={<UploadOutlined />}
+              loading={uploading}
+              disabled={uploading}
+              className="upload-button"
+            >
+              {uploading ? "Uploading..." : "Upload PDF"}
+            </Button>
+          </Upload>
+
+          <div className="records-table-container">
+            <h3>Uploaded Files</h3>
+            {records.length === 0 ? (
+              <p>No records uploaded yet.</p>
+            ) : (
+              <table className="records-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Upload Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map(record => renderRecordRow(record))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </TabPane>
+      </Tabs>
     </div>
   );
 };
