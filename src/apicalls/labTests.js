@@ -9,46 +9,18 @@ import {
   Timestamp,
   query,
   orderBy,
+  where,
+  serverTimestamp,
 } from "firebase/firestore";
 import { message } from "antd";
 import { jsPDF } from "jspdf";
 import moment from "moment";
 import firestoredb from "../firebaseConfig";
+import { addPatientUploadedRecord, addUserRecord } from "./recordpdf";
 
 // Base URL for API calls
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
-/**
- * Get all lab tests
- * @returns {Promise} Promise object representing the API response
- */
-export const GetAllLabTests = async () => {
-  try {
-    // Get auth token from local storage
-    const token = localStorage.getItem("token");
-
-    // Make API request with auth header
-    const response = await axios.get(`${API_URL}/lab-tests`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    // Return successful response
-    return {
-      success: true,
-      data: response.data.data,
-    };
-  } catch (error) {
-    // Handle errors
-    console.error("Error fetching lab tests:", error);
-
-    return {
-      success: false,
-      message: error.response?.data?.message || "Error fetching lab tests",
-    };
-  }
-};
 export const GetAllLabTestsFirebase = async () => {
   try {
     // Create a query to get all documents from the labTests collection
@@ -60,7 +32,7 @@ export const GetAllLabTestsFirebase = async () => {
 
     // Execute the query
     const querySnapshot = await getDocs(q);
-    
+
     // Initialize empty array to store the results
     const tests = [];
 
@@ -68,7 +40,7 @@ export const GetAllLabTestsFirebase = async () => {
     querySnapshot.forEach((doc) => {
       tests.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
 
@@ -78,7 +50,7 @@ export const GetAllLabTestsFirebase = async () => {
     };
   } catch (error) {
     console.error("Error fetching lab tests from Firebase:", error);
-    
+
     return {
       success: false,
       message: "Failed to fetch lab tests: " + error.message,
@@ -257,53 +229,47 @@ export const UpdateLabTestResults = async (testId, resultData) => {
   }
 };
 
-/**
- * Upload a test report file
- * @param {string} testId - The ID of the lab test
- * @param {File} reportFile - The report file to upload
- * @returns {Promise} Promise object representing the API response
- */
-export const UploadTestReport = async (testId, reportFile) => {
+export const UploadTestReport = async (testId, reportFile, userId) => {
   try {
-    if (!testId || !reportFile) {
+    console.log("Received parameters:", { testId, reportFile, userId });
+
+    if (!testId || !reportFile || !userId) {
       return {
         success: false,
-        message: "Test ID and report file are required",
+        message: "Test ID, report file, and user ID are required",
       };
     }
 
-    // Get auth token from local storage
-    const token = localStorage.getItem("token");
-
-    // Create form data for file upload
-    const formData = new FormData();
-    formData.append("reportFile", reportFile);
-
-    // Make API request with auth header
-    const response = await axios.post(
-      `${API_URL}/lab-tests/${testId}/upload-report`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
+    const labTestsRef = collection(firestoredb, "lab-tests");
+    const q = query(
+      labTestsRef,
+      where("testId", "==", testId), // Match the testId field
+      where("userId", "==", userId)  // Match the userId field
     );
+    const querySnapshot = await getDocs(q);
 
-    // Return successful response
-    return {
-      success: true,
-      data: response.data.data,
-      message: "Test report uploaded successfully",
+    console.log("Query Snapshot:", querySnapshot);
+
+    if (querySnapshot.empty) {
+      console.log("No matching documents found in Firestore.");
+      return {
+        success: false,
+        message: "Lab test not found",
+      };
+    }
+
+    const labTest = {
+      id: querySnapshot.docs[0].id,
+      ...querySnapshot.docs[0].data(),
     };
-  } catch (error) {
-    // Handle errors
-    console.error("Error uploading test report:", error);
+    console.log("Lab Test Document:", labTest);
 
+    // Rest of the function...
+  } catch (error) {
+    console.error("Error uploading test report:", error);
     return {
       success: false,
-      message: error.response?.data?.message || "Error uploading test report",
+      message: error.message || "Error uploading test report",
     };
   }
 };
