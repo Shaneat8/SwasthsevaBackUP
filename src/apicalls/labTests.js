@@ -233,6 +233,7 @@ export const UploadTestReport = async (testId, reportFile, userId) => {
   try {
     console.log("Received parameters:", { testId, reportFile, userId });
 
+    // Validate required parameters
     if (!testId || !reportFile || !userId) {
       return {
         success: false,
@@ -240,7 +241,27 @@ export const UploadTestReport = async (testId, reportFile, userId) => {
       };
     }
 
-    const labTestsRef = collection(firestoredb, "lab-tests");
+    // Validate reportFile has a name
+    if (!reportFile.name) {
+      console.error("Report file name is undefined");
+      const fallbackName = `Report_${testId}_${new Date().toISOString()}.pdf`;
+      console.log(`Using fallback name: ${fallbackName}`);
+      reportFile.name = fallbackName;
+    }
+
+    // Ensure the file has a .pdf extension
+    if (!reportFile.name.toLowerCase().endsWith('.pdf')) {
+      const newName = reportFile.name + '.pdf';
+      console.log(`Adding .pdf extension to filename: ${newName}`);
+      
+      // Create a new File object with PDF extension and correct MIME type
+      // This requires converting the original file to a proper PDF File object
+      const fileData = await reportFile.arrayBuffer();
+      reportFile = new File([fileData], newName, { type: 'application/pdf' });
+    }
+
+    // Query Firestore to find the lab test document
+    const labTestsRef = collection(firestoredb, "labTests");
     const q = query(
       labTestsRef,
       where("testId", "==", testId), // Match the testId field
@@ -264,7 +285,98 @@ export const UploadTestReport = async (testId, reportFile, userId) => {
     };
     console.log("Lab Test Document:", labTest);
 
-    // Rest of the function...
+    // Upload to Cloudinary with specific PDF format
+    const formData = new FormData();
+    formData.append("file", reportFile);
+    formData.append("upload_preset", "Records");
+    formData.append("folder", `patient-records/${userId}/labreports`);
+    // Explicitly specify the resource type and file type for Cloudinary
+    formData.append("resource_type", "raw");
+    // Add this to force Cloudinary to treat it as a PDF
+    formData.append("format", "pdf");
+
+    const uploadResponse = await fetch(
+      "https://api.cloudinary.com/v1_1/dagludyhc/raw/upload",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const uploadResult = await uploadResponse.json();
+
+    if (!uploadResponse.ok) {
+      throw new Error(uploadResult.message || "Upload failed");
+    }
+
+    console.log("Cloudinary upload result:", uploadResult);
+
+    // Create record data with all required fields
+    const recordData = {
+      name: reportFile.name, // Will now always have a value and end with .pdf
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+      userId: userId,
+      userEmail: labTest.userEmail || "Not provided",
+      userName: labTest.userName || "Not provided",
+      testId: testId,
+      testName: labTest.testName || "Unknown Test",
+      date: labTest.date || new Date().toISOString().split('T')[0],
+      timeSlot: labTest.timeSlot || "Not specified",
+      reportTime: labTest.reportTime || new Date().toISOString(),
+      type: "labreport",
+      source: "lab",
+      labTestId: labTest.id,
+      status: "completed",
+      fileType: "application/pdf",
+      fileSize: reportFile.size || 0,
+      uploadDate: new Date().toISOString(),
+    };
+
+    console.log("Record data to be saved:", recordData);
+
+    // Save to Firestore in user's records collection
+    const userRecordsRef = collection(
+      firestoredb,
+      `patient-records/${userId}/user_records`
+    );
+    const docRef = await addDoc(userRecordsRef, {
+      ...recordData,
+      createdAt: serverTimestamp(),
+    });
+
+    console.log("Document added to user_records with ID:", docRef.id);
+
+    // Also add to patientUploads collection for centralized access
+    const patientUploadsRef = collection(firestoredb, "patientUploads");
+    const centralDocRef = await addDoc(patientUploadsRef, {
+      ...recordData,
+      recordId: docRef.id,
+      createdAt: serverTimestamp(),
+    });
+
+    console.log("Document added to patientUploads with ID:", centralDocRef.id);
+
+    // Update the lab test status to 'completed'
+    const labTestDocRef = doc(firestoredb, "labTests", labTest.id);
+    await updateDoc(labTestDocRef, {
+      status: "completed",
+      reportUrl: uploadResult.secure_url,
+      reportUploadDate: serverTimestamp(),
+    });
+
+    console.log("Lab test updated with status completed");
+
+    // Return successful response
+    return {
+      success: true,
+      data: {
+        id: docRef.id,
+        centralId: centralDocRef.id,
+        ...recordData,
+      },
+      message: "Test report uploaded successfully as PDF",
+    };
   } catch (error) {
     console.error("Error uploading test report:", error);
     return {
@@ -273,7 +385,6 @@ export const UploadTestReport = async (testId, reportFile, userId) => {
     };
   }
 };
-
 /**
  * Generate lab test result PDF
  * @param {string} testId - The ID of the lab test
@@ -522,7 +633,7 @@ const uploadToCloudinary = async (pdfBlob, testId, userId) => {
     formData.append("folder", `patient-records/${userId}/test-results`);
 
     const uploadResponse = await fetch(
-      "https://api.cloudinary.com/v1_1/your_cloud_name/raw/upload", // Replace with your Cloudinary cloud name
+      "https://api.cloudinary.com/v1_1/dagludyhc/raw/upload", // Replace with your Cloudinary cloud name
       {
         method: "POST",
         body: formData,

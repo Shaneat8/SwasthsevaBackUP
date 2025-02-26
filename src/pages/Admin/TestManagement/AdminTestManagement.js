@@ -91,9 +91,15 @@ const AdminTestManagement = () => {
       dispatch(ShowLoader(true));
       const response = await GetAllLabTestsFirebase();
       dispatch(ShowLoader(false));
-
+  
       if (response.success) {
-        setLabTests(response.data);
+        // Ensure each lab test object includes testId and userId
+        const labTestsWithRequiredFields = response.data.map((test) => ({
+          ...test,
+          testId: test.testId || "defaultTestId", // Fallback if testId is missing
+          userId: test.userId || "defaultUserId", // Fallback if userId is missing
+        }));
+        setLabTests(labTestsWithRequiredFields);
       } else {
         message.error(response.message);
       }
@@ -141,7 +147,11 @@ const AdminTestManagement = () => {
 
   // Show patient info modal
   const handleShowPatientInfo = async (labTest) => {
-    setSelectedLabTest(labTest);
+    setSelectedLabTest({
+      ...labTest,
+      testId: labTest.testId || "defaultTestId", // Fallback if testId is missing
+      userId: labTest.userId || "defaultUserId", // Fallback if userId is missing
+    });
     await fetchPatientInfo(labTest.userId);
     setPatientInfoVisible(true);
   };
@@ -285,7 +295,7 @@ const AdminTestManagement = () => {
       message.error("Please fill in all required fields");
     }
   };
-  console.log("selectedLabTest:", selectedLabTest);
+  // console.log("selectedLabTest:", selectedLabTest);
   const handleUploadPdf = async () => {
     if (!pdfData || !selectedLabTest) {
       message.error("No PDF data or lab test selected");
@@ -308,12 +318,12 @@ const AdminTestManagement = () => {
         selectedLabTest.userId  // Patient's ID
       );
   
-      if (response.success) {
+      if (response && response.success) {
         message.success(response.message);
         setPdfPreviewVisible(false);
         fetchLabTests(); // Refresh the lab tests list
       } else {
-        message.error(response.message);
+        message.error(response?.message || "Failed to upload report");
       }
     } catch (error) {
       console.error("Error uploading PDF:", error);
