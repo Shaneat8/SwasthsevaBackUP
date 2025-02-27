@@ -1,0 +1,54 @@
+.spinner-parent {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  
+  .spinner-parent.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .spinner-parent.hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+  .backdrop-blur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8); /* White background with opacity */
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .loading-video {
+    width: auto;
+    height: auto;
+    min-width: 300px; /* Increased minimum size */
+    max-width: 70%; /* Percentage of viewport width */
+    min-height: 300px; /* Increased minimum size */
+    max-height: 70vh; /* Percentage of viewport height */
+    object-fit: contain; /* Maintain aspect ratio */
+    z-index: 10;
+  }
+  
+  .loading-text {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
+  }

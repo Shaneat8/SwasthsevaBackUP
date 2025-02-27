@@ -29,7 +29,6 @@ import {
   PlusCircleOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
-import axios from "axios";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
@@ -43,7 +42,6 @@ import { ShowLoader } from "../../../redux/loaderSlice";
 import { GetUserById } from "../../../apicalls/users";
 import {
   GetAllLabTestsFirebase,
-  UpdateLabTestResults,
   UploadTestReport,
 } from "../../../apicalls/labTests";
 
@@ -78,10 +76,12 @@ const AdminTestManagement = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    // Always fetch templates to ensure they're available for both tabs
+    fetchTemplates();
+
+    // Only fetch lab tests if on the lab tests tab
     if (activeTab === "1") {
       fetchLabTests();
-    } else {
-      fetchTemplates();
     }
   }, [activeTab]);
 
@@ -91,7 +91,7 @@ const AdminTestManagement = () => {
       dispatch(ShowLoader(true));
       const response = await GetAllLabTestsFirebase();
       dispatch(ShowLoader(false));
-  
+
       if (response.success) {
         // Ensure each lab test object includes testId and userId
         const labTestsWithRequiredFields = response.data.map((test) => ({
@@ -165,93 +165,166 @@ const AdminTestManagement = () => {
     }
   };
 
-  // Generate PDF from test results
   const generatePDF = (testData, patientData, template, results, notes) => {
     const doc = new jsPDF();
+    let currentY = 15; // Start position
+    const margin = 15;
+
+    // Debugging: Log all input parameters
+    console.log("testData:", testData);
+    console.log("patientData:", patientData);
+    console.log("template:", template);
+    console.log("results:", results);
+    console.log("notes:", notes);
 
     // Add header
     doc.setFontSize(18);
-    doc.text("Lab Test Report", 105, 15, { align: "center" });
+    doc.text("Lab Test Report", 105, currentY, { align: "center" });
+    currentY += 10;
 
     // Add logo or hospital name
     doc.setFontSize(12);
-    doc.text("HealthCare System", 105, 25, { align: "center" });
+    doc.text("Swasthya Seva HealthCare System", 105, currentY, {
+      align: "center",
+    });
+    currentY += 5;
 
     // Add line
     doc.setLineWidth(0.5);
-    doc.line(15, 30, 195, 30);
+    doc.line(margin, currentY, 195, currentY);
+    currentY += 10;
 
     // Add patient information
     doc.setFontSize(12);
-    doc.text("Patient Information:", 15, 40);
+    doc.text("Patient Information:", margin, currentY);
+    currentY += 10;
 
     doc.setFontSize(10);
-    doc.text(`Name: ${patientData.name}`, 15, 50);
-    doc.text(`Age: ${patientData.age}`, 15, 56);
-    doc.text(`Gender: ${patientData.gender}`, 15, 62);
-    doc.text(`Blood Group: ${patientData.bloodGroup}`, 15, 68);
+    // Make sure patient data exists and has safe default values
+    const patientName =
+      patientData && patientData.name ? String(patientData.name) : "N/A";
+    const patientAge =
+      patientData && patientData.age ? String(patientData.age) : "N/A";
+    const patientGender =
+      patientData && patientData.gender ? String(patientData.gender) : "N/A";
+    const patientBloodGroup =
+      patientData && patientData.bloodGroup
+        ? String(patientData.bloodGroup)
+        : "N/A";
 
-    doc.text(`Report ID: ${testData.id}`, 120, 50);
-    doc.text(`Date: ${testData.date}`, 120, 56);
-    doc.text(`Test: ${template.name}`, 120, 62);
+    // Make sure test data exists and has safe default values
+    const testId = testData && testData.id ? String(testData.id) : "N/A";
+    const testDate = testData && testData.date ? String(testData.date) : "N/A";
+    const testName = template && template.name ? String(template.name) : "N/A";
+
+    // Debugging: Log patient and test data
+    console.log("patientName:", patientName);
+    console.log("patientAge:", patientAge);
+    console.log("patientGender:", patientGender);
+    console.log("patientBloodGroup:", patientBloodGroup);
+    console.log("testId:", testId);
+    console.log("testDate:", testDate);
+    console.log("testName:", testName);
+
+    // Use safe string values for all text operations
+    doc.text(`Name: ${patientName}`, margin, currentY);
+    doc.text(`Report ID: ${testId}`, 120, currentY);
+    currentY += 6;
+
+    doc.text(`Age: ${patientAge}`, margin, currentY);
+    doc.text(`Date: ${testDate}`, 120, currentY);
+    currentY += 6;
+
+    doc.text(`Gender: ${patientGender}`, margin, currentY);
+    doc.text(`Test: ${testName}`, 120, currentY);
+    currentY += 6;
+
+    doc.text(`Blood Group: ${patientBloodGroup}`, margin, currentY);
+    currentY += 7;
 
     // Add line
-    doc.line(15, 75, 195, 75);
+    doc.line(margin, currentY, 195, currentY);
+    currentY += 10;
 
-    // Add test results
+    // Add test results heading
     doc.setFontSize(12);
-    doc.text("Test Results:", 15, 85);
+    doc.text("Test Results:", margin, currentY);
+    currentY += 5;
 
     // Create table for results
     const tableData = [];
-    template.parameters.forEach((param) => {
-      const value = results[param.name];
-      let status = "";
+    if (template && template.parameters) {
+      template.parameters.forEach((param) => {
+        const value =
+          results && results[param.name] ? String(results[param.name]) : "N/A";
+        let status = "";
 
-      // Simple logic to determine if result is normal or abnormal
-      // This should be enhanced based on actual reference range logic
-      if (param.refRange.includes("-")) {
-        const [min, max] = param.refRange
-          .split("-")
-          .map((v) => parseFloat(v.trim()));
-        const numValue = parseFloat(value);
-
-        if (numValue < min || numValue > max) {
-          status = "Abnormal";
-        } else {
-          status = "Normal";
+        // Simple logic to determine if result is normal or abnormal
+        if (param.refRange && param.refRange.includes("-")) {
+          const [min, max] = param.refRange
+            .split("-")
+            .map((v) => parseFloat(v.trim()));
+          const numValue = parseFloat(value);
+          if (!isNaN(numValue) && (numValue < min || numValue > max)) {
+            status = "Abnormal";
+          } else {
+            status = "Normal";
+          }
         }
-      }
 
-      tableData.push([param.name, value, param.unit, param.refRange, status]);
-    });
+        // Debugging: Log parameter and result
+        console.log(
+          "Parameter:",
+          param.name,
+          "Value:",
+          value,
+          "Status:",
+          status
+        );
 
-    doc.autoTable({
-      startY: 90,
+        // Make sure all table values are strings
+        tableData.push([
+          param.name || "",
+          value,
+          param.unit || "",
+          param.refRange || "",
+          status,
+        ]);
+      });
+    }
+
+    // Add the table and store the returned object with the finalY position
+    const tableResult = doc.autoTable({
+      startY: currentY,
       head: [["Parameter", "Result", "Unit", "Reference Range", "Status"]],
       body: tableData,
       theme: "grid",
       headStyles: { fillColor: [30, 144, 255] },
     });
 
-    // Add notes if any
-    if (notes && notes.trim()) {
-      const finalY = doc.previousAutoTable.finalY + 10;
-      doc.setFontSize(12);
-      doc.text("Notes:", 15, finalY);
-      doc.setFontSize(10);
+    // Get the final Y position directly from the table result
+    currentY = tableResult.finalY + 10;
 
-      // Word wrap for notes
+    // Add notes if any - positioned based on our tracked Y position
+    if (notes && typeof notes === "string" && notes.trim()) {
+      doc.setFontSize(12);
+      doc.text("Notes:", margin, currentY);
+      currentY += 7;
+
+      doc.setFontSize(10);
+      // Word wrap for notes, ensure notes is a string
       const splitNotes = doc.splitTextToSize(notes, 180);
-      doc.text(splitNotes, 15, finalY + 7);
+      doc.text(splitNotes, margin, currentY);
+      // Update Y position based on notes height
+      currentY += splitNotes.length * 5 + 10;
     }
 
     // Add footer with signature
     const pageHeight = doc.internal.pageSize.height;
-    doc.text("Electronically verified report", 15, pageHeight - 20);
+    doc.text("Electronically verified report", margin, pageHeight - 20);
     doc.text(
       "This is a computer-generated report and does not require signature",
-      15,
+      margin,
       pageHeight - 15
     );
 
@@ -261,57 +334,88 @@ const AdminTestManagement = () => {
   // Handle test result submission
   const handleTestResultSubmit = async () => {
     try {
-      // Validate only the required fields
-      await testResultForm.validateFields(["templateId", "results"]);
-  
-      // Get notes separately without validation
-      const allValues = testResultForm.getFieldsValue();
-      const notes = allValues.notes || "";
-  
+      // Get all form values first
+      const formValues = testResultForm.getFieldsValue();
+
+      // Check if templateId exists
+      if (!formValues.templateId) {
+        message.error("Please select a test template");
+        return;
+      }
+
+      // Check if results exist and are filled
+      if (!formValues.results) {
+        message.error("Test results are required");
+        return;
+      }
+
+      // Validate that all required result fields have values
+      const missingResults = [];
+      selectedTemplate.parameters.forEach((param) => {
+        if (
+          !formValues.results[param.name] &&
+          formValues.results[param.name] !== 0
+        ) {
+          missingResults.push(param.name);
+        }
+      });
+
+      if (missingResults.length > 0) {
+        message.error(
+          `Please fill in the following results: ${missingResults.join(", ")}`
+        );
+        return;
+      }
+
+      // Now that we've manually validated, proceed with form submission
       setUploading(true);
-  
+
+      // Notes are optional, so use empty string if not provided
+      const notes = formValues.notes || "";
+
       // Generate PDF
       const pdfDoc = generatePDF(
         selectedLabTest,
         patientInfo,
         selectedTemplate,
-        allValues.results,
+        formValues.results,
         notes
       );
-  
+
       // Save PDF data for preview
       setPdfData({
         dataUrl: pdfDoc.output("dataurlstring"),
         blob: pdfDoc.output("blob"),
-        testId: selectedLabTest.id, // Store testId with pdfData
+        testId: selectedLabTest.id,
       });
-  
+
       // Show PDF preview modal
       setPdfPreviewVisible(true);
       setUploading(false);
     } catch (error) {
       setUploading(false);
-      console.error("Form validation error:", error);
-      message.error("Please fill in all required fields");
+      console.error("Form submission error:", error);
+      message.error("An error occurred while processing the form");
     }
   };
+
   // console.log("selectedLabTest:", selectedLabTest);
   const handleUploadPdf = async () => {
     if (!pdfData || !selectedLabTest) {
       message.error("No PDF data or lab test selected");
       return;
     }
-  
+
     try {
       setUploading(true);
-  
+
       // Use the testId field from selectedLabTest
       const response = await UploadTestReport(
         selectedLabTest.id, // Use the document ID for the lab test
-        pdfData.blob,      // PDF file blob
-        selectedLabTest.userId  // Patient's ID
+        pdfData.blob, // PDF file blob
+        selectedLabTest.userId // Patient's ID
       );
-  
+
       if (response && response.success) {
         message.success(response.message);
         setPdfPreviewVisible(false);
@@ -784,7 +888,6 @@ const AdminTestManagement = () => {
                   {testParameters.map((param, index) => (
                     <Form.Item
                       key={index}
-                      name={["results", param.name]}
                       label={`${param.name} (${param.unit}) - Reference: ${param.refRange}`}
                       rules={[
                         {
@@ -793,7 +896,18 @@ const AdminTestManagement = () => {
                         },
                       ]}
                     >
-                      <Input placeholder={`Enter value for ${param.name}`} />
+                      <Form.Item
+                        name={["results", param.name]}
+                        noStyle
+                        rules={[
+                          {
+                            required: true,
+                            message: `Please enter ${param.name} result`,
+                          },
+                        ]}
+                      >
+                        <Input placeholder={`Enter value for ${param.name}`} />
+                      </Form.Item>
                     </Form.Item>
                   ))}
 

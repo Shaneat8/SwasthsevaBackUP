@@ -109,7 +109,45 @@ function BookTest() {
             message.warning("Please complete your profile before booking a test.");
             nav("/profile");
           } else {
-            // Fetch user's tests if profile is complete
+            // Define fetchUserTests inside the useEffect
+            const fetchUserTests = async (userId) => {
+              try {
+                setLoading(true);
+                dispatch(ShowLoader(true));
+                
+                // Get all tests for the user (modified function to avoid index error)
+                const q = query(
+                  collection(firestoredb, "labTests"), 
+                  where("userId", "==", userId)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                const tests = [];
+                
+                querySnapshot.forEach((doc) => {
+                  tests.push({
+                    id: doc.id,
+                    ...doc.data()
+                  });
+                });
+                
+                // Sort in memory instead of using orderBy in the query
+                tests.sort((a, b) => b.dateTimestamp.toMillis() - a.dateTimestamp.toMillis());
+                
+                // Limit to 10 most recent after sorting
+                const recentTests = tests.slice(0, 10);
+                
+                dispatch(ShowLoader(false));
+                setLoading(false);
+                setUserTests(recentTests);
+              } catch (error) {
+                dispatch(ShowLoader(false));
+                setLoading(false);
+                message.error("Failed to fetch your tests. Please try again.");
+              }
+            };
+            
+            // Call the inner function
             fetchUserTests(user.id);
           }
         } else {
@@ -122,8 +160,9 @@ function BookTest() {
     };
 
     checkProfileCompletion();
-  }, [nav, dispatch]);
+  }, [nav, dispatch]); // Dependencies now properly listed
 
+  // Define fetchUserTests at component level for use in other functions
   const fetchUserTests = async (userId) => {
     try {
       setLoading(true);

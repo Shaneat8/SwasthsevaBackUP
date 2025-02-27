@@ -88,10 +88,10 @@
 
 /* Rest of your styles remain the same */
 .heading {
-  font-size: 32px;
+  font-size: 35px;
   font-weight: 700;
   color: #1a1a1a;
-  text-align: left;
+  text-align: center;
   margin-bottom: 8px;
 }
 
@@ -105,9 +105,19 @@
   color: #374151;
 }
 
+.linksContainer {
+  display: flex;
+  justify-content: space-between; /* Space out the links */
+  align-items: center; /* Vertically center the links */
+  margin: -10px 0 20px; /* Adjust margin as needed */
+}
+
+.guest {
+  text-align: left;
+}
+
 .forgotPassword {
   text-align: right;
-  margin: -10px 0 20px;
 }
 
 .forgotPassword a {
@@ -190,3 +200,4 @@
   color: #ef4444;
   text-align: left;
 }
+

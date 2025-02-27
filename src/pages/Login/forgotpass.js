@@ -6,6 +6,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import firestoredb from "../../firebaseConfig";
 import { v4 as uuidv4 } from "uuid"; // For generating unique tokens
 import { doc, setDoc } from "firebase/firestore";
+import styles from "./Forgot.module.css";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -39,7 +40,7 @@ const ForgotPassword = () => {
       });
 
       // Create the reset link
-      //const resetLink = `http://localhost:3000/resetpass?token=${resetToken}`;
+      // const resetLink = `http://localhost:3000/resetpass?token=${resetToken}`;
       const resetLink = `https://swasthyasevawovv.netlify.app/resetpass?token=${resetToken}`;
 
       // Send the password reset email
@@ -52,33 +53,48 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="bg-white p-3 w-400 shadow-lg rounded">
-        <h2 className="text-center uppercase my-2">Forgot Password</h2>
-        <hr />
-        <br />
-        <Form layout="vertical" onFinish={handleForgotPassword}>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[{ required: true, message: "Please enter your email!" }]}
-          >
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Send Reset Link
-            </Button>
-          </Form.Item>
-          <Link className="color" to="/login">
-            <p>Back to Login</p>
-          </Link>
-        </Form>
+    <div className={styles.container}>
+      <div className={styles.part}>
+        <div className={styles.left}>
+          {/* Left side with illustration from background image */}
+        </div>
+        <div className={styles.right}>
+          <div className={styles.formCard}>
+            <h2 className={styles.heading}>FORGOT PASSWORD</h2>
+            <Form 
+              layout="vertical" 
+              onFinish={handleForgotPassword} 
+              className={styles.form}
+            >
+              <Form.Item
+                label={<span className={styles.label}>Email</span>}
+                name="email"
+                rules={[{ required: true, message: "Please enter your email!" }]}
+              >
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={styles.input}
+                />
+              </Form.Item>
+              <Form.Item>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  block 
+                  className={styles.button}
+                >
+                  Send Reset Link
+                </Button>
+              </Form.Item>
+              <div className={styles.backToLogin}>
+                <Link to="/login">Back to Login</Link>
+              </div>
+            </Form>
+          </div>
+        </div>
       </div>
     </div>
   );

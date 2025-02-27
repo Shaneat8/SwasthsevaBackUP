@@ -8,6 +8,7 @@ import Records from "./records";
 import TicketForm from "../Ticket/TicketForm";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import firestoredb from "../../firebaseConfig";
+import BookTest from "../BookTest/BookTest";
 
 
 
@@ -100,6 +101,11 @@ function Profile() {
           ))}
         </div>
       )
+    },
+    {
+      key: "6",
+      label: "Book Lab Test",
+      children: <BookTest/>
     }
   ];
 

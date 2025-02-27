@@ -273,3 +273,35 @@ export const GetPatientDetails = async (patientId) => {
     };
   }
 };
+
+export const LoginAsGuest = () => {
+  // Create a guest user object with limited permissions
+  const guestUser = {
+    id: "guest-" + Date.now(), // Unique guest ID
+    name: "Guest User",
+    email: "guest@example.com",
+    role: "guest",
+    isGuest: true,
+    profileComplete: true // So they don't get redirected to complete profile
+  };
+  
+  // Store in localStorage
+  localStorage.setItem("user", JSON.stringify(guestUser));
+  
+  return {
+    success: true,
+    message: "Logged in as guest",
+    data: guestUser
+  };
+};
+
+export const createGuestPopup = (RegistrationPopup, setShowPopup, showPopup) => {
+  return showPopup ? (
+    <RegistrationPopup onClose={() => setShowPopup(false)} />
+  ) : null;
+};
+
+export const isGuestUser = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  return user && user.isGuest;
+};
