@@ -6,7 +6,6 @@ import {
   where,
   Timestamp,
   orderBy,
-  limit,
 } from "firebase/firestore";
 import moment from "moment";
 import firestoredb from "../firebaseConfig";
@@ -46,10 +45,26 @@ export const BookLabTest = async (payload) => {
     // Add timestamp for easier querying
     const bookingDate = moment(payload.date, "YYYY-MM-DD").toDate();
 
-    // Create booking record
+    // Format gender for display (using the numeric value from user data)
+    let genderText = null;
+    if (payload.userGender === 1) {
+      genderText = "Male";
+    } else if (payload.userGender === 2) {
+      genderText = "Female";
+    }
+
+    // Calculate age from DOB if available
+    let age = null;
+    if (payload.userDOB) {
+      age = moment().diff(moment(payload.userDOB), 'years');
+    }
+
+    // Create booking record with user details for admin
     const bookingData = {
       ...payload,
       totalPrice,
+      userGenderText: genderText, // Add formatted gender for admin display
+      userAge: age, // Add calculated age for admin display
       dateTimestamp: Timestamp.fromDate(bookingDate),
       createdAt: Timestamp.now(),
     };
