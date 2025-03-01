@@ -7,6 +7,7 @@ import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore
 import firestoredb from '../../firebaseConfig';
 import { getMedicineList } from '../../apicalls/medicine';
 import { generateExcelReport, downloadExcelFile } from '../../apicalls/reportGenerator';
+import { getAllFeedback } from "../../apicalls/feedback";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -272,6 +273,52 @@ const Reports = () => {
           });
           break;
           
+        case 'feedback':
+          const feedbackResponse = await getAllFeedback();
+          if (feedbackResponse.success) {
+            data = feedbackResponse.data.map(feedback => {
+              // Process date if needed
+              let createdDate = new Date();
+              try {
+                if (typeof feedback.createdAt === 'string') {
+                  // Handle DD-MM-YY HH:mm format
+                  if (feedback.createdAt.match(/^\d{2}-\d{2}-\d{2}\s\d{2}:\d{2}$/)) {
+                    const [datePart, timePart] = feedback.createdAt.split(' ');
+                    const [day, month, year] = datePart.split('-');
+                    const [hours, minutes] = timePart.split(':');
+                    createdDate = new Date(`20${year}-${month}-${day}T${hours}:${minutes}:00`);
+                  } else {
+                    createdDate = new Date(feedback.createdAt);
+                  }
+                } else if (feedback.createdAt instanceof Timestamp) {
+                  createdDate = feedback.createdAt.toDate();
+                } else if (feedback.createdAt && typeof feedback.createdAt.toDate === 'function') {
+                  createdDate = feedback.createdAt.toDate();
+                } else if (feedback.createdAt && feedback.createdAt._seconds) {
+                  createdDate = new Date(feedback.createdAt._seconds * 1000);
+                } else if (feedback.createdAt && feedback.createdAt.seconds) {
+                  createdDate = new Date(feedback.createdAt.seconds * 1000);
+                } else if (feedback.createdAt) {
+                  createdDate = new Date(feedback.createdAt);
+                }
+              } catch (error) {
+                console.error(`Error formatting date for feedback:`, error);
+              }
+              
+              return {
+                "ID": feedback.id || '',
+                "User ID": feedback.userId || '',
+                "Rating": feedback.rating || 0,
+                "Comment": feedback.comment || '',
+                "Date": createdDate.toLocaleDateString('en-GB'),
+                "Time": createdDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+              };
+            });
+          } else {
+            throw new Error("Failed to fetch feedback data");
+          }
+          break;
+          
         default:
           throw new Error("Invalid report type");
       }
@@ -308,6 +355,7 @@ const Reports = () => {
               <Option value="doctors">Doctors Report</Option>
               <Option value="medicines">Medicines Report</Option>
               <Option value="complaints">Complaints Report</Option>
+              <Option value="feedback">Feedback Report</Option>
             </Select>
           </div>
           
@@ -349,6 +397,9 @@ const Reports = () => {
         </p>
         <p className="mb-1">
           <strong>Complaints Report:</strong> Includes all tickets with ID, title, description, status, priority, and dates.
+        </p>
+        <p className="mb-1">
+          <strong>Feedback Report:</strong> Includes all user feedback with ratings, comments, and submission dates.
         </p>
       </div>
     </div>

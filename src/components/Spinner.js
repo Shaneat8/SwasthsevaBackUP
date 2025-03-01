@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import loadingVideo from "../assets/Logo.mp4";
+import loadingVideo from "../assets/bgFile.webm";
 import "./Spinner.css";
 
 function Spinner() {

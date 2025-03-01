@@ -6,6 +6,10 @@ import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import Fuse from "fuse.js"; 
+import Footer from "./Design/Footer";
+import Testimonials from "./Design/Testimonials";
+import CTASection from "./Design/CTASection";
+import DoctorCardSection from "./Design/DoctorCardSection";
 
 
 function Home() {
@@ -58,7 +62,9 @@ function Home() {
   const nav = useNavigate();
   return (
     user && (
+      <>  
       <div>
+
         <div className="flex justify-between">
           <div className="flex">
             <Input
@@ -127,8 +133,17 @@ function Home() {
           )}
         </Row>
       </div>
-    )
+      <DoctorCardSection/>
+      <br/><br/>
+      <CTASection/>
+      <br/><br/>
+      <Testimonials/>
+      <br/><br/>
+      <Footer/>    
+      </>
+    ) 
   );
 }
+
 
 export default Home;

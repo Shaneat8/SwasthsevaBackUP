@@ -17,6 +17,9 @@ import TicketTracking from "./pages/Ticket/TicketTracking";
 import PatientRecordsPage from "./pages/DoctorForm/PatientRecordsPage";
 import AdminView from "./pages/Admin/AdminView";
 import BookTest from "./pages/BookTest/BookTest";
+import Feedback from "./pages/Feedback";
+import AboutUS from "./pages/AboutUs";
+import Appointments from "./pages/Profile/Appointments";
 
 function App() {
   const {loading}=useSelector((state)=>state.loader);
@@ -26,6 +29,7 @@ function App() {
       {loading && <Spinner/>}
       <BrowserRouter>
         <Routes>
+        
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>}/>
@@ -36,6 +40,7 @@ function App() {
           <Route path="/resetpass" element={<ResetPassword/>}/>
           <Route path="/admin" element={<ProtectedRoute><Admin/></ProtectedRoute>}/>
           <Route path="/appointment/:appointmentId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>                   
+          <Route path="/appointment" element={<ProtectedRoute><Appointments/></ProtectedRoute>}/>                   
           <Route path="/reschedule/:id/:response" element={<RescheduleResponse />} />
           <Route path="/patient-records/:patientId" element={<PatientRecordsPage />} />
 
@@ -45,6 +50,9 @@ function App() {
           <Route path="/AdminView" element={<ProtectedRoute><AdminView/></ProtectedRoute>} />
           {/* Book-test testing */}
           <Route path="/book-test" element={<ProtectedRoute><BookTest/></ProtectedRoute>}/>
+          <Route path="/feedback" element={<ProtectedRoute><Feedback/></ProtectedRoute>}/>
+          <Route path="/aboutus" element={<ProtectedRoute><AboutUS/></ProtectedRoute>}/>
+          <Route path="/doctor" element={<ProtectedRoute><Doctor/></ProtectedRoute>}/>
         </Routes>
       </BrowserRouter>
       

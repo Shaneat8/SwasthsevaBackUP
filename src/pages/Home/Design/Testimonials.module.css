@@ -1,0 +1,108 @@
+/* Testimonials Section */
+.testimonialsSection {
+    background-image: url("../../images/test_bg.png");
+    overflow: hidden; /* Ensure no horizontal scrollbar appears */
+    height: 100%;
+    background-size: cover;
+  }
+  
+  .sectionTitle {
+    font-size: 3rem;
+    font-weight: 500;
+    color: #000000;
+    margin-bottom: 3rem;
+    text-align: center;
+    font-family: "Prata" !important;
+  }
+  
+  .testimonialContainer {
+    max-width: 100%;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .testimonialSlider {
+    display: flex;
+    transition: transform 0.1s linear; /* Smoother animation */
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .testimonialCard {
+    flex: 0 0 300px;
+    height: 300px;
+    padding: 2rem;
+    margin-right: 2rem; /* Gap between cards */
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .testimonialCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .testimonialStars {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .testimonialText {
+    font-size: 1.1rem;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+  
+  .testimonialAuthor {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .testimonialAvatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: url('https://placehold.co/50x50/e9ecef/40E0D0') center/cover no-repeat;
+  }
+  
+  .authorName {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .authorTitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .testimonialsSection {
+      padding: 3rem 1.5rem;
+    }
+    
+    .testimonialCard {
+      min-width: 250px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .testimonialCard {
+      min-width: 220px;
+      padding: 1.5rem;
+    }
+    
+    .testimonialText {
+      font-size: 1rem;
+    }
+  }

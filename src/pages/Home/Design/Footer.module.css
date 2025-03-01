@@ -1,0 +1,230 @@
+/* Footer Styles */
+.footer {
+    background-color: #102844;
+    color: white !important;
+    padding: 1rem 2rem 2rem;
+    position: relative;
+    overflow: hidden;
+    border-radius: 70px;
+    margin: 25px;
+  }
+  
+  .container {
+    max-width: 1150px;
+    margin: 0 auto;
+  }
+  
+  .topSection {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .headingSection {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .mainHeading {
+    font-size: 2.8rem;
+    font-weight: 300;
+    color: white !important;
+    line-height: 1.2;
+    margin: 0;
+  }
+  
+  .contactButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .contactLink {
+    background-color: #60B5F0;
+    color: white !important;
+    text-decoration: none;
+    padding: 0.8rem 2.5rem;
+    border-radius: 2rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .contactLink:hover {
+    background-color: #4fa8e8;
+    transform: translateY(-2px);
+  }
+  
+  .divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin: 1rem 0;
+    width: 100%;
+  }
+  
+  .infoSection {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .logoSection {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .logoImage {
+    width: 225px;
+    height: 280px;
+    border-radius: 8px;
+    background-image: url("../../images/logo.png");
+  }
+  
+  .brandName {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white !important;
+    letter-spacing: 1px;
+  }
+  
+  .brandTagline {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #8FFF42;
+    letter-spacing: 1px;
+  }
+  
+  .linksSection {
+    flex: 3;
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .quickLinks, .servicesLinks, .contactInfo {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .linkHeading {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    color: white !important;
+    letter-spacing: 0.5px;
+  }
+  
+  .linksList {
+    list-style: none;
+    padding: 0;
+    margin-left: 10px;
+  }
+  
+  .linksList li {
+    margin-bottom: 0.7rem;
+  }
+  
+  .linksList a {
+    color: white !important;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .linksList a:hover {
+    color: #8FFF42;
+  }
+  
+  .contactDetail {
+    margin-bottom: 0.7rem;
+    line-height: 1.5;
+    color: white  !important;
+    margin-left: 10px;
+  }
+  
+  .socialIcons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .socialLink {
+    background-color: #fff !important;
+    color: #102844;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    padding: 8px;
+  }
+  
+  .socialLink:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .copyright {
+    text-align: center;
+    padding-top: 2rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .mainHeading {
+      font-size: 2.3rem;
+    }
+    
+    .contactLink {
+      padding: 0.7rem 2rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .headingSection {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+    
+    .contactButton {
+      align-self: flex-start;
+    }
+    
+    .infoSection {
+      flex-direction: column;
+    }
+    
+    .linksSection {
+      flex-direction: column;
+      gap: 2rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .footer {
+      padding: 2rem 1rem 1.5rem;
+    }
+    
+    .mainHeading {
+      font-size: 2rem;
+    }
+  }

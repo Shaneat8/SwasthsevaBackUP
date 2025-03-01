@@ -1,0 +1,198 @@
+/* Lab Test Section */
+.labTestSection {
+    padding: 5rem 3rem;
+    background-color: #cce5ff;
+    background-image: linear-gradient(to bottom right, #cce5ff, #b3d7ff);
+    color: #333;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .labTestContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  
+  .labTestTitle {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: rgb(30, 30, 30);
+    margin-bottom: 1rem;
+  }
+  
+  .labTestSubtitle {
+    font-size: 1.25rem;
+    color: #333;
+    margin: 0 auto 3rem;
+    max-width: 700px;
+    line-height: 1.5;
+  }
+  
+  .testCardsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+  
+  .testCard {
+    background-color: white;
+    border-radius: 16px;
+    overflow: hidden;
+    width: 330px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .testCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .testCardImage {
+    height: 200px;
+    overflow: hidden;
+  }
+  
+  .imagePlaceholder {
+    width: 100%;
+    height: 100%;
+    background-color: #e9ecef;
+  }
+  
+  .testCardTitle {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #000;
+    margin: 1.2rem 1.5rem 0.5rem;
+  }
+  
+  .testCardDescription {
+    font-size: 0.95rem;
+    color: #555;
+    margin: 0 1.5rem 1rem;
+    line-height: 1.4;
+  }
+  
+  .testFeatures {
+    list-style-type: none;
+    padding: 0 1.5rem;
+    margin: 0 0 1.5rem;
+  }
+  
+  .testFeatures li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.4;
+  }
+  
+  .testFeatures li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: rgb(30, 30, 30);
+    font-weight: bold;
+  }
+  
+  .testCardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    margin-top: auto;
+    border-top: 1px solid #f0f0f0;
+  }
+  
+  .priceContainer {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .priceLabel {
+    font-size: 0.85rem;
+    color: #777;
+    margin: 0 0 0.2rem;
+  }
+  
+  .price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: rgb(30, 30, 30);
+    margin: 0;
+  }
+  
+  .primaryButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.8rem;
+    background-color: rgb(30, 30, 30);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .primaryButton:hover {
+    background-color: rgb(30, 30, 30);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(46, 196, 182, 0.2);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1100px) {
+    .testCardsContainer {
+      gap: 1.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .labTestSection {
+      padding: 3rem 1.5rem;
+    }
+    
+    .labTestTitle {
+      font-size: 2.5rem;
+    }
+    
+    .labTestSubtitle {
+      font-size: 1.1rem;
+    }
+    
+    .testCardsContainer {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .testCard {
+      width: 100%;
+      max-width: 350px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .labTestTitle {
+      font-size: 2rem;
+    }
+    
+    .labTestSubtitle {
+      font-size: 1rem;
+    }
+    
+    .testCardFooter {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+  }

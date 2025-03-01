@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Tag, Button, Input, Timeline, Modal, Descriptions, Space, message, Spin, Divider } from 'antd';
+import { Card, Tag, Button, Input, Timeline, Modal, Descriptions, Space, message, Spin, Divider, Empty } from 'antd';
 import { 
   CheckCircleOutlined, 
   ClockCircleOutlined, 
@@ -53,11 +53,13 @@ const TicketTracking = () => {
         const ticketDoc = querySnapshot.docs[0];
         setTicket({ id: ticketDoc.id, ...ticketDoc.data() });
       } else {
+        setTicket({});
         message.error('Ticket not found');
       }
     } catch (error) {
       console.error('Error fetching ticket:', error);
       message.error('Failed to fetch ticket details');
+      setTicket({});
     } finally {
       setLoading(false);
     }
@@ -179,11 +181,18 @@ const TicketTracking = () => {
     );
   }
 
-  if (!ticket) {
+  
+  if (!ticket || Object.keys(ticket).length === 0) {
     return (
-      <div className="text-center p-8">
-        <h2 className="text-xl text-gray-600">Ticket not found</h2>
-        <p className="text-gray-500">The requested ticket could not be found.</p>
+      <div className="max-w-4xl mx-auto p-4">
+        <Card className="shadow-md">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span className="text-gray-600">No records found for this ticket.</span>
+            }
+          />
+        </Card>
       </div>
     );
   }

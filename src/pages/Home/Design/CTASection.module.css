@@ -1,0 +1,150 @@
+/* Call to Action Section */
+.ctaSection {
+    padding: 5rem 3rem;
+    background-image: url('../../images/app.png');
+    color: rgb(30, 30, 30);
+    text-align: center;
+    background-size: cover;
+  }
+  
+  .ctaContent {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .ctaTitle {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .ctaText {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+  }
+  
+  /* Enhanced Button with Animations */
+  .primaryButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2.5rem;
+    background-image: url('../../images/appt_btn.png');
+    background-size: cover;
+    color: rgb(255, 255, 255);
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.195, 0.885, 0.52, 1.275);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  /* Pseudo-element for ripple effect */
+  .primaryButton::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    transition: width 0.6s ease-out, height 0.6s ease-out;
+  }
+  
+  /* Hover state */
+  .primaryButton:hover {
+    background-color: #4a90e2;
+    color: white;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+  }
+  
+  /* Hover state ripple effect */
+  .primaryButton:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+  
+  /* Active/Click state */
+  .primaryButton:active {
+    transform: translateY(1px) scale(0.98);
+    background-color: #3a7bc8;
+    box-shadow: 0 5px 10px rgba(74, 144, 226, 0.2);
+    transition: all 0.2s ease;
+  }
+  
+  /* SVG animation */
+  .primaryButton svg {
+    transition: transform 0.4s ease;
+  }
+  
+  .primaryButton:hover svg {
+    transform: translateX(5px);
+    animation: arrowPulse 1.5s infinite;
+  }
+  
+  @keyframes arrowPulse {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    50% {
+      transform: translateX(8px);
+      opacity: 0.7;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Text animation */
+  .primaryButton span {
+    transition: all 0.3s ease;
+  }
+  
+  .primaryButton:hover span {
+    animation: textFade 1.5s infinite;
+  }
+  
+  @keyframes textFade {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .ctaSection {
+      padding: 3rem 1.5rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .ctaTitle {
+      font-size: 2rem;
+    }
+    
+    .ctaText {
+      font-size: 1rem;
+    }
+    
+    .primaryButton {
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+    }
+  }

@@ -11,6 +11,7 @@ import ResolvedComplaints from "./ResolvedComplaints";
 import { collection, getDocs, query } from "firebase/firestore";
 import firestoredb from "../../firebaseConfig";
 import Reports from "./Reports";
+import ManageFeedback from "./ManageFeedback";
 import AdminTestManagement from "./TestManagement/AdminTestManagement";
 
 const EmptyState = ({ message }) => (
@@ -36,7 +37,6 @@ const EmptyState = ({ message }) => (
   </div>
 );
 
-// Rest of the component remains exactly the same as the previous artifact, starting from StatCard...
 const StatCard = ({ title, value, trend, trendsUp, onClick }) => (
   <div
     className="bg-white p-5 rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:-translate-y-1"
@@ -154,7 +154,7 @@ const Overview = ({ doctors, users, tickets }) => {
     const totalDoctors = doctors?.length || 0;
     const totalPatients =
       users?.filter((user) => user.role === "user")?.length || 0;
-    const totalComplaints = tickets?.length || 0; // Now using tickets collection
+    const totalComplaints = tickets?.length || 0;
     const resolvedComplaints =
       tickets?.filter((ticket) => ticket.status === "closed")?.length || 0;
 
@@ -222,7 +222,6 @@ const Overview = ({ doctors, users, tickets }) => {
 };
 
 const AdminView = () => {
-  // Add tickets state
   const [tickets, setTickets] = useState([]);
   const [activeSection, setActiveSection] = useState("overview");
   const [doctors, setDoctors] = useState([]);
@@ -235,7 +234,7 @@ const AdminView = () => {
       dispatch(ShowLoader(true));
       setError(null);
 
-      // Add this code to fetch tickets
+      // Fetch tickets
       const ticketsQuery = query(collection(firestoredb, "tickets"));
       const ticketsSnapshot = await getDocs(ticketsQuery);
       const ticketsList = ticketsSnapshot.docs.map((doc) => ({
@@ -267,9 +266,6 @@ const AdminView = () => {
     fetchData();
   }, [fetchData]);
 
-  // ... Keep the rest of the AdminView component (renderSection, return statement) as is,
-  // but update the Overview rendering to:
-
   const renderSection = () => {
     if (error) {
       return (
@@ -291,59 +287,56 @@ const AdminView = () => {
       case "medicine":
         return <MedicineList />;
       case "reports":
-        return <Reports />; // Replace EmptyState with Reports component
+        return <Reports />;
       case "tests":
         return <AdminTestManagement />;
+      case "feedback":
+        return <ManageFeedback />;
       default:
         return <Overview doctors={doctors} users={users} tickets={tickets} />;
     }
   };
 
   return (
-    <div className="flex min-h-screen">
-      <div className="w-64 bg-gray-900 text-white fixed h-full overflow-y-auto">
-        <div className="p-5 border-b border-gray-700 ">
-          <h2 className="text-2xl font-bold !text-white">Hospital Admin</h2>
-        </div>
-        <nav className="mt-5 px-3">
-          {["overview", "medicine", "reports", "tests"].map((section) => (
-            <button
-              key={section}
-              className={`w-full px-3 py-3 text-left rounded-md transition-colors duration-200 ${
-                activeSection === section
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
-              }`}
-              onClick={() => setActiveSection(section)}
-            >
-              {section.charAt(0).toUpperCase() + section.slice(1)}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className="flex-1 ml-64 bg-gray-50">
-        <header className="bg-white p-5 flex justify-between items-center shadow-sm">
-          <h1 className="text-2xl text-gray-800">
-            Welcome to{" "}
-            {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
-          </h1>
-          <div className="flex items-center gap-4">
-            <input
-              type="search"
-              placeholder="Search..."
-              className="px-4 py-2 border rounded-md w-64"
-            />
-            <button className="p-2 hover:bg-gray-100 rounded-full">🔔</button>
-            <button className="p-2 hover:bg-gray-100 rounded-full">👤</button>
+    <div className="flex flex-col min-h-screen">
+      {/* Main container with sidebar and content */}
+      <div className="flex flex-1">
+        <div className="w-64 bg-gray-900 text-white fixed left-0 top-[93px] bottom-0 h-[calc(100vh-93px)] overflow-y-auto z-10">
+          <div className="p-5 border-b border-gray-700">
+            <h2 className="text-2xl font-bold">Hospital Admin</h2>
           </div>
-        </header>
+          <nav className="mt-5 px-3">
+            {["overview", "medicine", "reports", "tests", "feedback"].map(
+              (section) => (
+                <button
+                  key={section}
+                  className={`w-full px-3 py-3 text-left rounded-md transition-colors duration-200 ${
+                    activeSection === section
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  }`}
+                  onClick={() => setActiveSection(section)}
+                >
+                  {section.charAt(0).toUpperCase() + section.slice(1)}
+                </button>
+              )
+            )}
+          </nav>
+        </div>
 
-        <main className="p-5">{renderSection()}</main>
+        {/* Main content with margin adjusted for the fixed sidebar */}
+        <div className="flex-1 ml-64 bg-gray-50 min-h-screen">
+          <header className="bg-white p-5 flex justify-between items-center shadow-sm">
+            <h1 className="text-2xl text-gray-800">
+              Welcome to{" "}
+              {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
+            </h1>
+          </header>
+          <main className="p-5">{renderSection()}</main>
+        </div>
       </div>
     </div>
   );
 };
 
 export default AdminView;
-
