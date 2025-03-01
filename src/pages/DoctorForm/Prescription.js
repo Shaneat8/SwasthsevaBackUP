@@ -9,6 +9,7 @@ import { AddMedicineDiagnosis, getMedicineList, updateMedicineQuantity } from ".
 import "./Prescription.css";
 import { GetPatientDetails } from "../../apicalls/users";
 import {
+  ArrowLeftOutlined,
   FolderOutlined,
   MinusCircleOutlined,
   PlusOutlined,
@@ -36,6 +37,10 @@ function Prescription() {
   const [existingPrescription, setExistingPrescription] = useState(null);
   const navigate = useNavigate();
   const { appointmentId } = useParams();
+
+  const handleBack = () => {
+    navigate("/appointment");
+  };
 
   const handleViewRecords = () => {
     if (appointmentData?.userId) {
@@ -343,6 +348,7 @@ function Prescription() {
 
         message.success("Prescription saved successfully!");
         medicineForm.resetFields();
+        navigate('/appointment')
       } else {
         message.error(response.message);
       }
@@ -374,6 +380,10 @@ function Prescription() {
       </div>
 
       {/* Patient Information */}
+      <Button className="back-button" onClick={handleBack}>
+        <ArrowLeftOutlined style={{ marginRight: 8 }} /> Go Back
+      </Button>
+      
       <div className="patient-info">
         <h3>PATIENT INFORMATION</h3>
         <div className="info-grid">

@@ -141,7 +141,7 @@ function ProtectedRoute({ children }) {
         navigate("/appointment");
         break;
       case "d-2":
-        navigate("/doctor-profile?tab=records");
+        navigate("/profile?tab=records");
         break;
       case "d-3":
         navigate("/AboutUs");

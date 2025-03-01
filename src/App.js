@@ -20,6 +20,7 @@ import BookTest from "./pages/BookTest/BookTest";
 import Feedback from "./pages/Feedback";
 import AboutUS from "./pages/AboutUs";
 import Appointments from "./pages/Profile/Appointments";
+import DoctorList from "./pages/BookAppointment/DoctorList";
 
 function App() {
   const {loading}=useSelector((state)=>state.loader);
@@ -53,6 +54,7 @@ function App() {
           <Route path="/feedback" element={<ProtectedRoute><Feedback/></ProtectedRoute>}/>
           <Route path="/aboutus" element={<ProtectedRoute><AboutUS/></ProtectedRoute>}/>
           <Route path="/doctor" element={<ProtectedRoute><Doctor/></ProtectedRoute>}/>
+          <Route path="/book-doctor" element={<ProtectedRoute><DoctorList/></ProtectedRoute>}/>
         </Routes>
       </BrowserRouter>
       

@@ -1,34 +1,53 @@
-import { Button, Input, message } from "antd";
-import React, { useCallback, useEffect,useState } from "react";
+import { Button, Input, message, Card, Tag, Typography, Divider } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { GetDoctorById } from "../../apicalls/doctors";
 import moment from "moment";
-import {
-  BookDoctorAppointment,
-  GetDocAppointmentsOnDate,
-} from "../../apicalls/appointment";
+import { BookDoctorAppointment, GetDocAppointmentsOnDate } from "../../apicalls/appointment";
+import { 
+  CalendarOutlined, 
+  MailOutlined, 
+  PhoneOutlined, 
+  EnvironmentOutlined, 
+  DollarOutlined, 
+  ClockCircleOutlined, 
+  MedicineBoxOutlined,
+  ArrowLeftOutlined,
+  UserOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined
+} from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { CheckProfileCompletion } from "../../apicalls/users";
+import { motion } from "framer-motion";
+import './bookdoctor.css';
+
+const { Title, Text } = Typography;
 
 function BookAppointment() {
-  const [problem = "", setProblem] = React.useState("");
-  const [error,setError]=useState("");
-  const [date = "", setDate] = React.useState("");
-  const [doctor, setDoctor] = React.useState(null);
-  const [selectedSlot = "", setSelectedSlot] = React.useState("");
+  const [problem, setProblem] = useState("");
+  const [error, setError] = useState("");
+  const [date, setDate] = useState("");
+  const [doctor, setDoctor] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [bookedSlots, setBookedSlots] = useState([]);
   const nav = useNavigate();
   const { id } = useParams();
   const dispatch = useDispatch();
-  const [bookedSlots = [], setBookedSlots] = React.useState([]);
+  
+  // Handle back button click
+  const handleBack = () => {
+    nav("/book-doctor");
+  };
 
   useEffect(() => {
     const checkProfileCompletion = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
       if (!user?.id) {
         message.error("Please login to continue");
-        nav("/login"); // Redirect to login if user is not logged in
+        nav("/login");
         return;
       }
 
@@ -37,7 +56,7 @@ function BookAppointment() {
         if (result.success) {
           if (!result.profileComplete) {
             message.warning("Please complete your profile before booking an appointment.");
-            nav("/profile"); // Redirect to profile if profile is incomplete
+            nav("/profile");
           }
         } else {
           message.error(result.message);
@@ -70,7 +89,12 @@ function BookAppointment() {
     const day = moment(date).format("dddd");
     if (!doctor.days.includes(day)) {
       return (
-        <h3>Doctor is not available on {moment(date).format("DD-MM-YYYY")}</h3>
+        <div className="unavailable-message">
+          <InfoCircleOutlined style={{ fontSize: "20px", marginRight: "10px" }} />
+          <Text type="warning" style={{ fontSize: "16px" }}>
+            Dr. {doctor.firstName} {doctor.lastName} is not available on {moment(date).format("dddd, MMMM Do YYYY")}
+          </Text>
+        </div>
       );
     }
 
@@ -84,49 +108,52 @@ function BookAppointment() {
       startTime.add(slotDuration, "minutes");
     }
 
-    return slots.map((slot) => {
-      const isBooked = bookedSlots?.find(
-        (bookedSlot) =>
-          bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
-      );
+    return (
+      <div className="slots-grid">
+        {slots.map((slot) => {
+          const isBooked = bookedSlots?.find(
+            (bookedSlot) => bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
+          );
 
-      // Check if the slot is in the past for the current date
-      const isCurrentDate = moment(date).isSame(moment(), "day");
-      const isPastSlot =
-        isCurrentDate && moment(slot, "HH:mm").isBefore(moment(), "HH:mm");
+          // Check if the slot is in the past for the current date
+          const isCurrentDate = moment(date).isSame(moment(), "day");
+          const isPastSlot = isCurrentDate && moment(slot, "HH:mm").isBefore(moment(), "HH:mm");
+          const isDisabled = isBooked || isPastSlot;
 
-      return (
-        <div
-          key={slot}
-          className="bg-white p-1 cursor-pointer"
-          onClick={() => !isPastSlot && setSelectedSlot(slot)}
-          style={{
-            border:
-              selectedSlot === slot ? "2px solid green" : "1px solid gray",
-            backgroundColor: isBooked || isPastSlot ? "#d3d4d4" : "white",
-            pointerEvents: isBooked || isPastSlot ? "none" : "auto",
-            cursor: isBooked || isPastSlot ? "not-allowed" : "pointer",
-          }}
-        >
-          <span>
-            {moment(slot, "HH:mm").format("hh:mm A")} -{" "}
-            {moment(slot, "HH:mm")
-              .add(slotDuration, "minutes")
-              .format("hh:mm A")}
-          </span>
-        </div>
-      );
-    });
+          return (
+            <motion.div
+              key={slot}
+              className={`slot-item ${selectedSlot === slot ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+              onClick={() => !isDisabled && setSelectedSlot(slot)}
+              whileHover={!isDisabled ? { scale: 1.03 } : {}}
+              whileTap={!isDisabled ? { scale: 0.98 } : {}}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="slot-time">
+                <ClockCircleOutlined style={{ marginRight: 8 }} />
+                {moment(slot, "HH:mm").format("h:mm A")} - {" "}
+                {moment(slot, "HH:mm").add(slotDuration, "minutes").format("h:mm A")}
+              </div>
+              {isBooked && <Tag color="red">Booked</Tag>}
+              {isPastSlot && !isBooked && <Tag color="orange">Past</Tag>}
+              {!isDisabled && <Tag color="green">Available</Tag>}
+            </motion.div>
+          );
+        })}
+      </div>
+    );
   };
 
   const onBookAppointment = async () => {
     if (!problem.trim()) {
-      message.error('Problem is required');
-      setError('Problem is required');
-      return; // Prevent booking if the problem is empty
+      message.error("Problem is required");
+      setError("Problem is required");
+      return;
     }
     
-    setError(''); // Clear the error if the problem is valid
+    setError("");
 
     try {
       dispatch(ShowLoader(true));
@@ -139,11 +166,9 @@ function BookAppointment() {
         userEmail: user.email,
         date,
         slot: selectedSlot,
-        timeSlot: `${moment(selectedSlot, "HH:mm A").format(
-          "hh:mm A"
-        )} - ${moment(selectedSlot, "HH:mm A")
+        timeSlot: `${moment(selectedSlot, "HH:mm A").format("h:mm A")} - ${moment(selectedSlot, "HH:mm A")
           .add(60, "minutes")
-          .format("hh:mm A")}`,
+          .format("h:mm A")}`,
         doctorName: `${doctor.firstName} ${doctor.lastName}`,
         userName: JSON.parse(localStorage.getItem("user")).name,
         bookedOn: moment().format("DD-MM-YYYY hh:mm A"),
@@ -204,6 +229,7 @@ function BookAppointment() {
 
   // Disable current date if the time frame has passed
   const isCurrentDateDisabled = () => {
+    if (!doctor) return false;
     const currentTime = moment();
     const doctorEndTime = moment(doctor.endTime, "HH:mm");
     return currentTime.isAfter(doctorEndTime);
@@ -211,112 +237,157 @@ function BookAppointment() {
 
   return (
     doctor && (
-      <div className="bg-white p-2">
-        <h1 className="uppercase text-secondary my-1">
-          <b>
-            {doctor?.firstName} {doctor?.lastName}
-          </b>
-        </h1>
-        <hr />
-
-        <div className="w-half flex flex-column gap-1 my-1">
-          <div className="flex justify-between w-full">
-            <h4>Speciality :</h4>
-            <h4>{doctor.Specialist}</h4>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <h4>Experience :</h4>
-            <h4>{doctor.experience} Years</h4>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <h4>Email :</h4>
-            <h4>{doctor.email}</h4>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <h4>Phone :</h4>
-            <h4>{doctor.phone}</h4>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <h4>Address :</h4>
-            <h4>{doctor.address}</h4>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <h4>Fees :</h4>
-            <h4>Rs. {doctor.Fee} per Session</h4>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <h4>Days Available :</h4>
-            <h4>{doctor.days.join(",")}</h4>
-          </div>  
+      <div className="booking-page">
+        {/* Back Button */}
+        <div className="page-header">
+          <Button className="back-button" onClick={handleBack}>
+            <ArrowLeftOutlined style={{ marginRight: 8 }} /> Go Back
+          </Button>
         </div>
-        <hr />
 
-        {/* Slots here */}
-        <div className="flex flex-column gap-1 my-1">
-          <div className="flex gap-2 w-400 items-end">
-            <div>
-              <span>Select Date : </span>
+        <Card 
+          className="booking-card"
+          title={
+            <div className="doctor-header">
+              <div className="doctor-avatar">
+                {doctor.firstName.charAt(0)}{doctor.lastName.charAt(0)}
+              </div>
+              <div className="doctor-title">
+                <Title level={2}>
+                  Dr. {doctor.firstName} {doctor.lastName}
+                </Title>
+                <Tag color="blue" icon={<MedicineBoxOutlined />}>{doctor.Specialist}</Tag>
+                <Tag color="green" icon={<UserOutlined />}>{doctor.experience} Years Experience</Tag>
+              </div>
+            </div>
+          }
+        >
+          <div className="doctor-info-section">
+            <div className="section-title">
+              <InfoCircleOutlined /> Doctor Information
+            </div>
+            <div className="info-grid">
+              <div className="info-item">
+                <MailOutlined className="info-icon" />
+                <div>
+                  <Text type="secondary">Email</Text>
+                  <Text strong>{doctor.email}</Text>
+                </div>
+              </div>
+              <div className="info-item">
+                <PhoneOutlined className="info-icon" />
+                <div>
+                  <Text type="secondary">Phone</Text>
+                  <Text strong>{doctor.phone}</Text>
+                </div>
+              </div>
+              <div className="info-item">
+                <EnvironmentOutlined className="info-icon" />
+                <div>
+                  <Text type="secondary">Address</Text>
+                  <Text strong>{doctor.address}</Text>
+                </div>
+              </div>
+              <div className="info-item">
+                <DollarOutlined className="info-icon" />
+                <div>
+                  <Text type="secondary">Fee</Text>
+                  <Text strong>Rs. {doctor.Fee} per Session</Text>
+                </div>
+              </div>
+              <div className="info-item days-available">
+                <CalendarOutlined className="info-icon" />
+                <div>
+                  <Text type="secondary">Days Available</Text>
+                  <div className="days-tags">
+                    {doctor.days.map(day => (
+                      <Tag key={day} color="processing">{day}</Tag>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Divider orientation="left" className="divider-styled">
+            <Text strong style={{ fontSize: '16px' }}>Book an Appointment</Text>
+          </Divider>
+
+          <div className="booking-section">
+            <div className="section-title">
+              <CalendarOutlined /> Select Appointment Details
+            </div>
+            
+            <div className="date-selection">
+              <Text strong>Select Date:</Text>
               <Input
+                prefix={<CalendarOutlined />}
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 min={isCurrentDateDisabled() ? moment().add(1, "day").format("YYYY-MM-DD") : moment().format("YYYY-MM-DD")}
                 disabled={isCurrentDateDisabled() && moment(date).isSame(moment(), "day")}
+                className="date-input"
               />
             </div>
-          </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "10px",
-              padding: "10px 0",
-              maxWidth: "100%",
-            }}
-          >
-            {date && getSlotsData()}
-          </div>
+            {date && (
+              <motion.div 
+                className="slots-container"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Text strong>Available Time Slots:</Text>
+                {getSlotsData()}
+              </motion.div>
+            )}
 
-          {selectedSlot && (
-            <div>
-              <TextArea
-                style={{ padding: "10px" }}
-                placeholder="Enter your problem here"
-                value={problem}
-                onChange={(e) => setProblem(e.target.value)}
-                rows="5"
-              />
-              {error && <div style={{ color: 'red' }}>{error}</div>} 
-              <div className="flex gap-2 my-3 justify-center">
-                <Button
-                  size="large"
-                  className="b-rd"
-                  onClick={() => {
-                    nav("/");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="large"
-                  className="b-rd"
-                  color="default"
-                  variant="solid"
-                  onClick={onBookAppointment}
-                >
-                  Book Appointment
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+            {selectedSlot && (
+              <motion.div 
+                className="problem-container"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="booking-info-summary">
+                  <Text strong>
+                    <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                    Selected Appointment: {moment(date).format("dddd, MMMM Do YYYY")} at {moment(selectedSlot, "HH:mm").format("h:mm A")}
+                  </Text>
+                </div>
+                
+                <Text strong>Describe your medical concern:</Text>
+                <TextArea
+                  placeholder="Please provide details about your medical condition or reason for consultation"
+                  value={problem}
+                  onChange={(e) => setProblem(e.target.value)}
+                  rows="5"
+                  className="problem-textarea"
+                />
+                {error && <Text type="danger">{error}</Text>}
+                
+                <div className="booking-actions">
+                  <Button 
+                    size="large"
+                    onClick={handleBack}
+                    className="cancel-button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={onBookAppointment}
+                    className="book-button"
+                  >
+                    Book Appointment
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </Card>
       </div>
     )
   );

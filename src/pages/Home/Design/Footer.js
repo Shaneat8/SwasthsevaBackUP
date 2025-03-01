@@ -9,7 +9,7 @@ const Footer = () => {
           <div className={styles.headingSection}>
             <h2 className={styles.mainHeading}>Let's Connect<br />with us</h2>
             <div className={styles.contactButton}>
-              <a href="#contact" className={styles.contactLink}>Contact Us</a>
+              <a href="/profile?tab=tickets" className={styles.contactLink}>Contact Us</a>
             </div>
           </div>
           
@@ -28,21 +28,21 @@ const Footer = () => {
               <div className={styles.quickLinks}>
                 <h3 className={styles.linkHeading}>QUICK LINKS</h3>
                 <ul className={styles.linksList}>
-                  <li><a href="#home">Home</a></li>
-                  <li><a href="#about">About Us</a></li>
-                  <li><a href="#team">Meet Our Team</a></li>
-                  <li><a href="#profile">Profile</a></li>
+                  <li><a href="/">Home</a></li>
+                  <li><a href="/AboutUs">About Us</a></li>
+                  <li><a href="/AboutUs">Meet Our Team</a></li>
+                  <li><a href="/Profile">Profile</a></li>
                 </ul>
               </div>
 
               <div className={styles.servicesLinks}>
                 <h3 className={styles.linkHeading}>SERVICES</h3>
                 <ul className={styles.linksList}>
-                  <li><a href="#book-appointment">Book Appointment</a></li>
-                  <li><a href="#book-test">Book Test</a></li>
-                  <li><a href="#register-doctor">Register a Doctor</a></li>
-                  <li><a href="#records">Records</a></li>
-                  <li><a href="#register-complaint">Register a Complaint</a></li>
+                  <li><a href="/book-doctor">Book Appointment</a></li>
+                  <li><a href="/book-test">Book Test</a></li>
+                  <li><a href="/doctor">Register a Doctor</a></li>
+                  <li><a href="/profile?tab=records">Records</a></li>
+                  <li><a href="/profile?tab=support">Register a Complaint</a></li>
                 </ul>
               </div>
 

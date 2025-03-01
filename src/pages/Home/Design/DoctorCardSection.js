@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { message, Input } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { message } from "antd";
 import { useDispatch } from "react-redux";
 import styles from "./DoctorCardSection.module.css";
 import {GetAllDoctors} from "../../../apicalls/doctors";
@@ -9,7 +8,6 @@ import {ShowLoader} from "../../../redux/loaderSlice";
 const DoctorCardSection = () => {
   const [doctors, setDoctors] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState("All Experts");
   const dispatch = useDispatch();
@@ -25,8 +23,15 @@ const DoctorCardSection = () => {
         const approvedDoctors = response.data.filter(
           (doctor) => doctor.status === "approved"
         );
-        setDoctors(approvedDoctors);
-        setFilteredDoctors(approvedDoctors);
+        // Assign a consistent imageIndex to each doctor when data is first loaded
+        const doctorsWithImageIndex = approvedDoctors.map((doctor, index) => ({
+          ...doctor,
+          imageIndex: index % 5 + 1, // Assign a consistent image index (1-5)
+          gradientIndex: index % 5   // Assign a consistent gradient index (0-4)
+        }));
+        
+        setDoctors(doctorsWithImageIndex);
+        setFilteredDoctors(doctorsWithImageIndex);
       } else {
         message.error(response.message);
       }
@@ -67,60 +72,22 @@ const DoctorCardSection = () => {
     return filteredDoctors.slice(startIndex, endIndex);
   };
 
-  // Handle search changes
-  const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-
-    // Reset active index when searching
-    setActiveIndex(0);
-
-    // Filter doctors based on search term
-    filterDoctors(term, activeFilter);
-  };
-
   // Handle specialty filter
   const handleFilterClick = (filter) => {
     setActiveFilter(filter);
     setActiveIndex(0);
-    filterDoctors(searchTerm, filter);
-  };
-
-  // Combined filter function for both search and specialty
-  const filterDoctors = (term, filter) => {
-    let results = [...doctors];
-
-    // Apply specialty filter (if not "All Experts")
-    if (filter !== "All Experts") {
-      results = results.filter(
+    
+    // Apply specialty filter
+    if (filter === "All Experts") {
+      setFilteredDoctors(doctors);
+    } else {
+      const results = doctors.filter(
         (doctor) =>
           doctor.Specialist?.toLowerCase() === filter.toLowerCase() ||
           doctor.specialty?.toLowerCase() === filter.toLowerCase()
       );
+      setFilteredDoctors(results);
     }
-
-    // Apply search term filter
-    if (term) {
-      results = results.filter((doctor) => {
-        const fullName = `${doctor.firstName || ""} ${
-          doctor.lastName || ""
-        }`.toLowerCase();
-        const name = doctor.name ? doctor.name.toLowerCase() : "";
-        const specialty = (
-          doctor.Specialist ||
-          doctor.specialty ||
-          ""
-        ).toLowerCase();
-
-        return (
-          fullName.includes(term.toLowerCase()) ||
-          name.includes(term.toLowerCase()) ||
-          specialty.includes(term.toLowerCase())
-        );
-      });
-    }
-
-    setFilteredDoctors(results);
   };
 
   // Get all unique specialties for filter buttons
@@ -133,11 +100,30 @@ const DoctorCardSection = () => {
     return Array.from(specialties);
   };
 
-  // Get doctor's image URL
+  // Get doctor's image based on the doctor's assigned imageIndex
   const getDoctorImage = (doctor) => {
-    if (doctor.imageUrl) return doctor.imageUrl;
-    // Create a placeholder image if no image is available
-    return `/placeholder-doctor${(doctor.id % 6) + 1}.jpg`;
+    try {
+      // Use the doctor's consistent imageIndex instead of position in filtered array
+      return require(`./doctor_image/placeholder-doctor${doctor.imageIndex}.png`);
+    } catch (error) {
+      // Fallback to a specific placeholder if the import fails
+      return require('./doctor_image/placeholder-doctor1.png');
+    }
+  };
+
+  // Get gradient color based on the doctor's assigned gradientIndex
+  const getGradientColor = (doctor) => {
+    // Array of different gradient combinations like in the screenshot
+    const gradients = [
+      'linear-gradient(to bottom, rgba(232, 244, 248, 0) 50%, rgba(62, 198, 224, 0.2) 60%, rgba(62, 198, 224, 0.7) 100%)',  // Blue
+      'linear-gradient(to bottom, rgba(249, 232, 232, 0) 50%, rgba(229, 115, 115, 0.2) 60%, rgba(229, 115, 115, 0.7) 100%)',  // Red
+      'linear-gradient(to bottom, rgba(240, 248, 232, 0) 50%, rgba(181, 213, 106, 0.2) 60%, rgba(181, 213, 106, 0.7) 100%)',  // Green
+      'linear-gradient(to bottom, rgba(232, 240, 248, 0) 50%, rgba(100, 181, 246, 0.2) 60%, rgba(100, 181, 246, 0.7) 100%)',  // Light blue
+      'linear-gradient(to bottom, rgba(250, 240, 230, 0) 50%, rgba(255, 183, 77, 0.2) 60%, rgba(255, 183, 77, 0.7) 100%)'    // Orange
+    ];
+    
+    // Use doctor's consistent gradientIndex instead of position in filtered array
+    return gradients[doctor.gradientIndex];
   };
 
   return (
@@ -151,17 +137,6 @@ const DoctorCardSection = () => {
           Meet the specialists shaping the future of healthcare with their
           expertise, innovation, and unwavering compassion
         </p>
-      </div>
-
-      <div className={styles.searchContainer}>
-        <Input
-          placeholder="Search Doctor by Name or Speciality"
-          allowClear
-          suffix={<SearchOutlined />}
-          className={styles.searchInput}
-          value={searchTerm}
-          onChange={handleSearch}
-        />
       </div>
 
       <div className={styles.filterContainer}>
@@ -180,48 +155,47 @@ const DoctorCardSection = () => {
 
       {filteredDoctors.length === 0 ? (
         <div className={styles.noResults}>
-          <h3>No doctors found. Try a different search term or filter.</h3>
+          <h3>No doctors found. Try a different filter.</h3>
         </div>
       ) : (
         <>
           <div className={styles.doctorCardsContainer}>
-            {getVisibleDoctors().map((doctor) => (
-              <div key={doctor.id} className={styles.doctorCard}>
-                <div className={styles.doctorImageContainer}>
-                  <div
-                    className={styles.doctorImage}
+            {getVisibleDoctors().map((doctor, index) => {
+              return (
+                <div 
+                  key={doctor._id || doctor.id || index}
+                  className={styles.doctorCard}
+                >
+                  {/* Image container with gradient overlay */}
+                  <div 
+                    className={styles.doctorImageContainer}
                     style={{
                       backgroundImage: `url(${getDoctorImage(doctor)})`,
+                      backgroundColor:"#dbe3ee",
                     }}
-                  ></div>
-                </div>
-                <div className={styles.doctorInfo}>
-                  <h3 className={styles.doctorName}>
-                    {doctor.name ||
-                      `${doctor.firstName || ""} ${doctor.lastName || ""}`}
-                  </h3>
-                  <p className={styles.doctorSpecialty}>
-                    {doctor.specialty || doctor.Specialist}
-                  </p>
-
-                  {doctor.experience && (
-                    <p className={styles.doctorExperience}>
-                      Experience: {doctor.experience} Years
+                  >
+                    {/* Gradient overlay */}
+                    <div 
+                      className={styles.gradientOverlay}
+                      style={{
+                        background: getGradientColor(doctor),
+                      }}
+                    ></div>
+                  </div>
+                  
+                  {/* Text overlay directly on the image */}
+                  <div className={styles.doctorTextOverlay}>
+                    <h3 className={styles.doctorName}>
+                      {doctor.name ||
+                        `${doctor.firstName || ""} ${doctor.lastName || ""}`}
+                    </h3>
+                    <p className={styles.doctorSpecialty}>
+                      {doctor.specialty || doctor.Specialist || "Specialist"}
                     </p>
-                  )}
-
-                  {doctor.Fee && (
-                    <p className={styles.doctorFee}>
-                      Consultation Fee: Rs. {doctor.Fee}
-                    </p>
-                  )}
-
-                  <button className={styles.appointmentButton}>
-                    Book Appointment
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className={styles.navigationContainer}>
