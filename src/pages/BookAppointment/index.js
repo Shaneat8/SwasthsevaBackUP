@@ -89,7 +89,7 @@ function BookAppointment() {
     const day = moment(date).format("dddd");
     if (!doctor.days.includes(day)) {
       return (
-        <div className="unavailable-message">
+        <div className="unavailable-notification">
           <InfoCircleOutlined style={{ fontSize: "20px", marginRight: "10px" }} />
           <Text type="warning" style={{ fontSize: "16px" }}>
             Dr. {doctor.firstName} {doctor.lastName} is not available on {moment(date).format("dddd, MMMM Do YYYY")}
@@ -109,7 +109,7 @@ function BookAppointment() {
     }
 
     return (
-      <div className="slots-grid">
+      <div className="time-slots-grid">
         {slots.map((slot) => {
           const isBooked = bookedSlots?.find(
             (bookedSlot) => bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
@@ -123,7 +123,7 @@ function BookAppointment() {
           return (
             <motion.div
               key={slot}
-              className={`slot-item ${selectedSlot === slot ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+              className={`time-slot-item ${selectedSlot === slot ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
               onClick={() => !isDisabled && setSelectedSlot(slot)}
               whileHover={!isDisabled ? { scale: 1.03 } : {}}
               whileTap={!isDisabled ? { scale: 0.98 } : {}}
@@ -131,7 +131,7 @@ function BookAppointment() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="slot-time">
+              <div className="slot-time-display">
                 <ClockCircleOutlined style={{ marginRight: 8 }} />
                 {moment(slot, "HH:mm").format("h:mm A")} - {" "}
                 {moment(slot, "HH:mm").add(slotDuration, "minutes").format("h:mm A")}
@@ -237,22 +237,22 @@ function BookAppointment() {
 
   return (
     doctor && (
-      <div className="booking-page">
+      <div className="appointment-booking-container">
         {/* Back Button */}
-        <div className="page-header">
-          <Button className="back-button" onClick={handleBack}>
+        <div className="navigation-header">
+          <Button className="navigation-button" onClick={handleBack}>
             <ArrowLeftOutlined style={{ marginRight: 8 }} /> Go Back
           </Button>
         </div>
 
         <Card 
-          className="booking-card"
+          className="appointment-card"
           title={
-            <div className="doctor-header">
-              <div className="doctor-avatar">
+            <div className="physician-header">
+              <div className="physician-avatar">
                 {doctor.firstName.charAt(0)}{doctor.lastName.charAt(0)}
               </div>
-              <div className="doctor-title">
+              <div className="physician-title">
                 <Title level={2}>
                   Dr. {doctor.firstName} {doctor.lastName}
                 </Title>
@@ -262,44 +262,51 @@ function BookAppointment() {
             </div>
           }
         >
-          <div className="doctor-info-section">
-            <div className="section-title">
-              <InfoCircleOutlined /> Doctor Information
-            </div>
-            <div className="info-grid">
-              <div className="info-item">
-                <MailOutlined className="info-icon" />
+
+        <div className="physician-details-section">
+          <div className="section-heading">
+            <InfoCircleOutlined /> Doctor Information
+          </div>
+          <div className="details-grid">
+            {/* First row: Email, Phone, Address */}
+            <div>
+              <div className="detail-item">
+                <MailOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Email</Text>
+                  <Text type="secondary">Email:</Text>
                   <Text strong>{doctor.email}</Text>
                 </div>
               </div>
-              <div className="info-item">
-                <PhoneOutlined className="info-icon" />
+              <div className="detail-item">
+                <PhoneOutlined className="detail-icon phone-icon" />
                 <div>
-                  <Text type="secondary">Phone</Text>
+                  <Text type="secondary">Phone:</Text>
                   <Text strong>{doctor.phone}</Text>
                 </div>
               </div>
-              <div className="info-item">
-                <EnvironmentOutlined className="info-icon" />
+              <div className="detail-item">
+                <EnvironmentOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Address</Text>
-                  <Text strong>{doctor.address}</Text>
+                  <Text type="secondary" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>Address:</Text>
+                  <Text strong style={{height:'auto'}}>{doctor.address}</Text>
                 </div>
               </div>
-              <div className="info-item">
-                <DollarOutlined className="info-icon" />
+            </div>
+            
+            {/* Second row: Fee and Days Available */}
+            <div>
+              <div className="detail-item availability-item">
+                <DollarOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Fee</Text>
+                  <Text type="secondary">Fee:</Text>
                   <Text strong>Rs. {doctor.Fee} per Session</Text>
                 </div>
               </div>
-              <div className="info-item days-available">
-                <CalendarOutlined className="info-icon" />
+              <div className="detail-item availability-item">
+                <CalendarOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Days Available</Text>
-                  <div className="days-tags">
+                  <Text type="secondary">Days Available:</Text>
+                  <div className="availability-tags">
                     {doctor.days.map(day => (
                       <Tag key={day} color="processing">{day}</Tag>
                     ))}
@@ -308,17 +315,18 @@ function BookAppointment() {
               </div>
             </div>
           </div>
+        </div>
 
-          <Divider orientation="left" className="divider-styled">
+          <Divider orientation="left" className="section-divider">
             <Text strong style={{ fontSize: '16px' }}>Book an Appointment</Text>
           </Divider>
 
-          <div className="booking-section">
-            <div className="section-title">
+          <div className="appointment-form-section">
+            <div className="section-heading">
               <CalendarOutlined /> Select Appointment Details
             </div>
             
-            <div className="date-selection">
+            <div className="date-selector">
               <Text strong>Select Date:</Text>
               <Input
                 prefix={<CalendarOutlined />}
@@ -327,13 +335,13 @@ function BookAppointment() {
                 onChange={(e) => setDate(e.target.value)}
                 min={isCurrentDateDisabled() ? moment().add(1, "day").format("YYYY-MM-DD") : moment().format("YYYY-MM-DD")}
                 disabled={isCurrentDateDisabled() && moment(date).isSame(moment(), "day")}
-                className="date-input"
+                className="date-picker"
               />
             </div>
 
             {date && (
               <motion.div 
-                className="slots-container"
+                className="time-slots-container"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
@@ -345,12 +353,12 @@ function BookAppointment() {
 
             {selectedSlot && (
               <motion.div 
-                className="problem-container"
+                className="medical-problem-container"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="booking-info-summary">
+                <div className="appointment-summary">
                   <Text strong>
                     <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
                     Selected Appointment: {moment(date).format("dddd, MMMM Do YYYY")} at {moment(selectedSlot, "HH:mm").format("h:mm A")}
@@ -363,15 +371,15 @@ function BookAppointment() {
                   value={problem}
                   onChange={(e) => setProblem(e.target.value)}
                   rows="5"
-                  className="problem-textarea"
+                  className="medical-problem-input"
                 />
                 {error && <Text type="danger">{error}</Text>}
                 
-                <div className="booking-actions">
+                <div className="appointment-actions">
                   <Button 
                     size="large"
                     onClick={handleBack}
-                    className="cancel-button"
+                    className="cancel-action"
                   >
                     Cancel
                   </Button>
@@ -379,7 +387,7 @@ function BookAppointment() {
                     type="primary"
                     size="large"
                     onClick={onBookAppointment}
-                    className="book-button"
+                    className="confirm-action"
                   >
                     Book Appointment
                   </Button>

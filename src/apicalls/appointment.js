@@ -23,9 +23,9 @@ export const BookDoctorAppointment = async (payload) => {
     });
 
     // Send email notification to doctor about new appointment
-    if (payload.doctorEmail) {
+    if (payload.userEmail) {
       await sendAppointmentEmail(
-        payload.doctorEmail,
+        payload.userEmail,
         'NEW_APPOINTMENT',
         {
           patientName: payload.userName,
