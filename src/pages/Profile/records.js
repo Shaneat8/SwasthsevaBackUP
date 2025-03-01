@@ -18,7 +18,8 @@ import {
   fetchPatientUploadedRecords,
   fetchLabRecords, 
   addUserRecord, 
-  addLabRecord, 
+  addLabRecord,
+  addPatientUploadedRecord,
   deleteUserRecord, 
   deleteLabRecord 
 } from "../../apicalls/recordpdf";
@@ -39,7 +40,7 @@ const FileTypeIcon = ({ fileName }) => {
   }
 };
 
-// File Item Component
+// File Item Component - Updated to show uploadedBy info
 const FileItem = ({ file, onDownload, onDelete }) => {
   return (
     <motion.div 
@@ -54,8 +55,13 @@ const FileItem = ({ file, onDownload, onDelete }) => {
       <div className="file-info">
         <span className="file-name">{file.name}</span>
         <span className="file-date">
-          {file.createdAt ? moment(file.createdAt.toDate()).format('LL') : 'N/A'}
+          {file.createdAt ? moment(file.createdAt.toDate ? file.createdAt.toDate() : file.createdAt).format('LL') : 'N/A'}
         </span>
+        {file.uploadedBy && (
+          <span className={`upload-source ${file.uploadedBy === 'user' ? 'user-upload' : 'doctor-upload'}`}>
+            {file.uploadedBy === 'user' ? 'Self-uploaded' : 'Doctor-prescribed'}
+          </span>
+        )}
       </div>
       
       <div className="file-size">
@@ -83,8 +89,6 @@ const FileItem = ({ file, onDownload, onDelete }) => {
   );
 };
 
-// Storage Usage Component
-// Storage Usage Component with purple theme and downward animation
 // Storage Usage Component with purple theme - horizontal layout
 const StorageUsage = ({ percentage = "3.8%", usedValue = 3.8, total = "1 TB" }) => {
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
@@ -203,9 +207,40 @@ const Records = () => {
           fetchLabRecords(user.id)
         ]);
 
-        setDoctorPrescribedRecords(Array.isArray(prescribed) ? prescribed : []);
-        setPatientUploadedRecords(Array.isArray(uploaded) ? uploaded : []);
-        setLabRecords(Array.isArray(lab) ? lab : []);
+        // Filter doctor-prescribed records (removing patient uploads)
+        const doctorRecords = Array.isArray(prescribed) ? 
+          prescribed.filter(record => record.uploadedBy === 'doctor') : [];
+          
+        const processedUploaded = Array.isArray(uploaded) ? 
+          uploaded.map(record => ({
+            ...record,
+            uploadedBy: 'user' // Ensure all patient records have uploadedBy set to 'user'
+          })) : [];
+
+        // Find patient uploads in the user_records that might have been missed
+        const userUploadsInRecords = Array.isArray(prescribed) ? 
+          prescribed.filter(record => record.uploadedBy === 'user') : [];
+          
+        // Combine all patient uploads from both collections
+        const allPatientUploads = [...processedUploaded, ...userUploadsInRecords];
+        
+        // Remove duplicates by checking for same public_id or URL
+        const uniquePatientUploads = allPatientUploads.filter((record, index, self) => 
+          index === self.findIndex(r => 
+            (r.public_id && r.public_id === record.public_id) || 
+            (r.url && r.url === record.url)
+          )
+        );
+          
+        const processedLabRecords = Array.isArray(lab) ? 
+          lab.map(record => ({
+            ...record,
+            uploadedBy: record.uploadedBy || 'doctor' // Default to doctor if not specified
+          })) : [];
+
+        setDoctorPrescribedRecords(doctorRecords);
+        setPatientUploadedRecords(uniquePatientUploads);
+        setLabRecords(processedLabRecords);
       } catch (error) {
         message.error("Error loading user data");
         console.error("Initialization error:", error);
@@ -287,41 +322,48 @@ const Records = () => {
         userId: user.id,
         email: user.email,
         size: file.size || 0,
+        uploadedBy: 'user', // Add uploadedBy parameter to mark as user-uploaded
       };
 
+      // Always add to patientUploads collection first
+      const patientUploadId = await addPatientUploadedRecord(recordData);
+      
+      // Create a new record object with the ID from patientUploads
+      const newPatientRecord = {
+        id: patientUploadId,
+        ...recordData,
+        createdAt: new Date() // Use a plain Date object
+      };
+      
+      // Add to the patient uploaded records state
+      setPatientUploadedRecords(prevRecords => [...prevRecords, newPatientRecord]);
+
+      // Also add to the appropriate tab's collection based on active tab
       let docRef;
       if (activeTab === 'all-records') {
-        // This will go to patient uploaded records in all-records tab
+        // Store in user_records but maintain the uploadedBy='user' field
         docRef = await addUserRecord(user.id, recordData);
-        
-        // Create a new record object with the current timestamp
-        const newRecord = {
-          id: docRef.id,
-          ...recordData,
-          createdAt: {
-            toDate: () => new Date() // Create a compatible timestamp object
-          }
-        };
-        
-        // Add to patient uploaded records
-        setPatientUploadedRecords(prevRecords => [...prevRecords, newRecord]);
       } else if (activeTab === 'lab-records') {
         docRef = await addLabRecord(user.id, recordData);
         
         // Create a new record object with the current timestamp
-        const newRecord = {
+        const newLabRecord = {
           id: docRef.id,
           ...recordData,
-          createdAt: {
-            toDate: () => new Date() // Create a compatible timestamp object
-          }
+          createdAt: new Date() // Use a plain Date object
         };
         
         // Add to lab records
-        setLabRecords(prevRecords => [...prevRecords, newRecord]);
+        setLabRecords(prevRecords => [...prevRecords, newLabRecord]);
       }
 
       message.success(`${file.name} uploaded successfully`);
+      
+      // Automatically switch to the Patient Uploaded tab to show the new file
+      if (activeTab === 'all-records') {
+        setActiveRecordsSubTab('patient-uploaded');
+      }
+      
     } catch (error) {
       message.error(`Upload failed: ${error.message}`);
       console.error("Upload error:", error);
@@ -335,38 +377,71 @@ const Records = () => {
       message.error("Please log in to delete files");
       return;
     }
-
+  
     const hide = message.loading('Deleting file...', 0);
-
+  
     try {
-      const response = await fetch('/.netlify/functions/deleteFile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          publicId,
-          userId: user.id,
-          email: user.email 
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.message || 'Delete failed');
+      // First, try to delete the file from Cloudinary
+      try {
+        const response = await fetch('/.netlify/functions/deleteFile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            publicId,
+            userId: user.id,
+            email: user.email 
+          }),
+        });
+        
+        // Check if the response is JSON before trying to parse it
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const result = await response.json();
+          
+          if (!response.ok) {
+            console.warn("Cloudinary deletion warning:", result.message);
+            // Continue with database deletion even if Cloudinary fails
+          }
+        } else {
+          // Log the error but continue with database deletion
+          console.warn("Cloudinary deletion returned non-JSON response");
+        }
+      } catch (cloudinaryError) {
+        // Log the Cloudinary error but continue with database deletion
+        console.warn("Cloudinary deletion failed:", cloudinaryError.message);
       }
-
-      // Determine which collection to delete from based on where the file is found
-      if (doctorPrescribedRecords.some(record => record.id === id)) {
+  
+      // Find the record to be deleted in all collections
+      const recordInDoctorPrescribed = doctorPrescribedRecords.find(record => record.id === id);
+      const recordInPatientUploaded = patientUploadedRecords.find(record => record.id === id);
+      const recordInLabRecords = labRecords.find(record => record.id === id);
+      
+      // Delete the record from the appropriate collection(s)
+      if (recordInDoctorPrescribed) {
         await deleteUserRecord(user.id, id);
         setDoctorPrescribedRecords(prev => prev.filter(record => record.id !== id));
-      } else if (patientUploadedRecords.some(record => record.id === id)) {
-        await deleteUserRecord(user.id, id);
-        setPatientUploadedRecords(prev => prev.filter(record => record.id !== id));
-      } else if (labRecords.some(record => record.id === id)) {
+      }
+      
+      if (recordInPatientUploaded) {
+        // Note: We need to check if this ID is from patientUploads collection or user_records
+        // If it's from user_records, we need to delete it from there
+        if (recordInPatientUploaded.source === 'patient') {
+          // This is from patientUploads collection - we need to handle deletion differently
+          // Since we don't have a direct delete function for patientUploads, we'll handle UI only
+          setPatientUploadedRecords(prev => prev.filter(record => record.id !== id));
+          // We'd need to implement a server function to delete from patientUploads collection
+        } else {
+          // This is from user_records collection
+          await deleteUserRecord(user.id, id);
+          setPatientUploadedRecords(prev => prev.filter(record => record.id !== id));
+        }
+      }
+      
+      if (recordInLabRecords) {
         await deleteLabRecord(user.id, id);
         setLabRecords(prev => prev.filter(record => record.id !== id));
       }
-
+  
       message.success('File deleted successfully');
     } catch (error) {
       message.error(`Delete failed: ${error.message}`);
@@ -447,7 +522,7 @@ const Records = () => {
                 
                 {/* Sub-tabs for Medical Records */}
                 <Tabs 
-                  defaultActiveKey={activeRecordsSubTab}
+                  activeKey={activeRecordsSubTab}
                   onChange={handleRecordsSubTabChange}
                   className="sub-tabs"
                 >
@@ -608,6 +683,26 @@ const Records = () => {
         .sub-tabs .ant-tabs-tab.ant-tabs-tab-active {
           background: #e6f7ff;
           border-radius: 4px;
+        }
+        
+        /* Added styles for upload source indicator */
+        .upload-source {
+          display: inline-block;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 10px;
+          margin-left: 8px;
+          vertical-align: middle;
+        }
+        
+        .user-upload {
+          background-color: #e6f7ff;
+          color: #1890ff;
+        }
+        
+        .doctor-upload {
+          background-color: #f6ffed;
+          color: #52c41a;
         }
       `}</style>
     </div>

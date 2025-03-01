@@ -8,6 +8,8 @@ export const fetchUserRecords = async (userId) => {
   return querySnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
+    // If uploadedBy is not specified, assume it's from a doctor
+    uploadedBy: doc.data().uploadedBy || 'doctor'
   }));
 };
 
@@ -29,6 +31,8 @@ export const fetchLabRecords = async (userId) => {
       name: data.name || (data.testId ? `Lab_Report_${data.testId}.pdf` : 'Lab Report.pdf'),
       // Map public_id and preserve original fields
       public_id: data.reportPublicId || data.public_id,
+      // Add uploadedBy field with default value if not present
+      uploadedBy: data.uploadedBy || 'doctor',
       // Preserve original fields as well
       createdAt: data.createdAt,
       testId: data.testId,
@@ -40,11 +44,31 @@ export const fetchLabRecords = async (userId) => {
   });
 };
 
+// Fetch patient-uploaded records
+export const fetchPatientUploadedRecords = async (userId) => {
+  try {
+    const recordsRef = collection(firestoredb, 'patientUploads');
+    const q = query(recordsRef, where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      // Always set uploadedBy to 'user' for patient uploads
+      uploadedBy: 'user'
+    }));
+  } catch (error) {
+    throw new Error('Error fetching patient uploaded records: ' + error.message);
+  }
+};
+
 // Add a new record
 export const addUserRecord = async (userId, recordData) => {
   const userRecordsRef = collection(firestoredb, `patient-records/${userId}/user_records`);
   const docRef = await addDoc(userRecordsRef, {
     ...recordData,
+    // Ensure uploadedBy field exists, default to 'user' if not specified
+    uploadedBy: recordData.uploadedBy || 'user',
     createdAt: serverTimestamp(),
   });
   return docRef;
@@ -62,11 +86,30 @@ export const addLabRecord = async (userId, recordData) => {
     reportPublicId: recordData.public_id,
     // Add status if not provided
     status: recordData.status || "completed",
+    // Ensure uploadedBy field exists, default to 'user' if not specified
+    uploadedBy: recordData.uploadedBy || 'user',
     createdAt: serverTimestamp(),
   };
   
   const docRef = await addDoc(labRecordsRef, formattedData);
   return docRef;
+};
+
+// Function to add patient-uploaded record
+export const addPatientUploadedRecord = async (record) => {
+  try {
+    const recordsRef = collection(firestoredb, 'patientUploads');
+    const docRef = await addDoc(recordsRef, {
+      ...record,
+      // Always set uploadedBy to 'user' for patient uploads
+      uploadedBy: 'user',
+      createdAt: new Date(),
+      source: 'patient'
+    });
+    return docRef.id;
+  } catch (error) {
+    throw new Error('Error adding patient uploaded record: ' + error.message);
+  }
 };
 
 // Delete a record
@@ -77,35 +120,4 @@ export const deleteUserRecord = async (userId, recordId) => {
 // Delete a lab record
 export const deleteLabRecord = async (userId, recordId) => {
   await deleteDoc(doc(firestoredb, `patient-records/${userId}/lab-reports`, recordId));
-};
-
-//Function to fetch patient-uploaded records
-export const fetchPatientUploadedRecords = async (userId) => {
-  try {
-    const recordsRef = collection(firestoredb, 'patientUploads');
-    const q = query(recordsRef, where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    throw new Error('Error fetching patient uploaded records: ' + error.message);
-  }
-};
-
-// Function to add patient-uploaded record
-export const addPatientUploadedRecord = async (record) => {
-  try {
-    const recordsRef = collection(firestoredb, 'patientUploads');
-    const docRef = await addDoc(recordsRef, {
-      ...record,
-      createdAt: new Date(),
-      source: 'patient'
-    });
-    return docRef.id;
-  } catch (error) {
-    throw new Error('Error adding patient uploaded record: ' + error.message);
-  }
 };

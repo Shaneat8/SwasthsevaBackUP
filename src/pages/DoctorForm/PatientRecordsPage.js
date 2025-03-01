@@ -16,15 +16,20 @@ import {
   MedicineBoxOutlined
 } from "@ant-design/icons";
 import { GetPatientDetails } from "../../apicalls/users";
-import { fetchUserRecords, fetchPatientUploadedRecords } from "../../apicalls/recordpdf";
+import { 
+  fetchUserRecords, 
+  fetchPatientUploadedRecords,
+  fetchLabRecords 
+} from "../../apicalls/recordpdf";
 import moment from "moment";
 
 const { Title, Text } = Typography;
 
 function PatientRecordsPage() {
   const [patientData, setPatientData] = useState(null);
-  const [prescribedRecords, setPrescribedRecords] = useState([]);
-  const [uploadedRecords, setUploadedRecords] = useState([]);
+  const [doctorPrescribedRecords, setDoctorPrescribedRecords] = useState([]);
+  const [patientUploadedRecords, setPatientUploadedRecords] = useState([]);
+  const [labRecords, setLabRecords] = useState([]);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,31 +58,59 @@ function PatientRecordsPage() {
     try {
       if (!patientId) return;
       
-      // Fetch prescribed records
-      const prescribedResponse = await fetchUserRecords(patientId);
-      if (Array.isArray(prescribedResponse)) {
-        console.log("Prescribed records:", prescribedResponse);
-        setPrescribedRecords(prescribedResponse);
-      } else {
-        console.error("Prescribed records not an array:", prescribedResponse);
-        setPrescribedRecords([]);
-      }
+      // Fetch all records in parallel for better performance
+      const [prescribed, uploaded, lab] = await Promise.all([
+        fetchUserRecords(patientId),
+        fetchPatientUploadedRecords(patientId),
+        fetchLabRecords(patientId)
+      ]);
       
-      // Fetch patient uploaded records with correct parameter handling
-      // This is likely where the issue is occurring
-      const uploadedResponse = await fetchPatientUploadedRecords(patientId);
-      if (Array.isArray(uploadedResponse)) {
-        console.log("Uploaded records:", uploadedResponse);
-        setUploadedRecords(uploadedResponse);
-      } else {
-        console.error("Uploaded records not an array:", uploadedResponse);
-        setUploadedRecords([]);
-      }
+      // Filter doctor-prescribed records from user_records collection
+      const doctorRecords = Array.isArray(prescribed) ? 
+        prescribed.filter(record => record.uploadedBy === 'doctor') : [];
+
+      // Process patient uploaded records to ensure proper formatting
+      const processedUploaded = Array.isArray(uploaded) ? 
+        uploaded.map(record => ({
+          ...record,
+          uploadedBy: 'user' // Ensure all patient records have uploadedBy set to 'user'
+        })) : [];
+
+      // Find patient uploads in the user_records that might have been missed
+      const userUploadsInRecords = Array.isArray(prescribed) ? 
+        prescribed.filter(record => record.uploadedBy === 'user') : [];
+          
+      // Combine all patient uploads from both collections
+      const allPatientUploads = [...processedUploaded, ...userUploadsInRecords];
+        
+      // Remove duplicates by checking for same public_id or URL
+      const uniquePatientUploads = allPatientUploads.filter((record, index, self) => 
+        index === self.findIndex(r => 
+          (r.public_id && r.public_id === record.public_id) || 
+          (r.url && r.url === record.url)
+        )
+      );
+      
+      // Process lab records
+      const processedLabRecords = Array.isArray(lab) ? 
+        lab.map(record => ({
+          ...record,
+          uploadedBy: record.uploadedBy || 'doctor' // Default to doctor if not specified
+        })) : [];
+      
+      console.log("Doctor prescribed records:", doctorRecords);
+      console.log("Patient uploaded records:", uniquePatientUploads);
+      console.log("Lab records:", processedLabRecords);
+      
+      setDoctorPrescribedRecords(doctorRecords);
+      setPatientUploadedRecords(uniquePatientUploads);
+      setLabRecords(processedLabRecords);
     } catch (error) {
       console.error("Error fetching records:", error);
       message.error("Failed to fetch patient records: " + error.message);
-      setPrescribedRecords([]);
-      setUploadedRecords([]);
+      setDoctorPrescribedRecords([]);
+      setPatientUploadedRecords([]);
+      setLabRecords([]);
     } finally {
       setLoading(false);
     }
@@ -180,7 +213,7 @@ function PatientRecordsPage() {
                     {formatDate(record.createdAt)}
                   </p>
                   <Badge 
-                    color={source === "Doctor Prescribed" ? "blue" : "green"} 
+                    color={source === "Doctor Prescribed" ? "blue" : (source === "Lab Records" ? "purple" : "green")} 
                     text={source}
                     className="mb-2"
                   />
@@ -188,6 +221,12 @@ function PatientRecordsPage() {
                     <p className="text-gray-600 text-sm flex items-center bg-blue-50 p-2 rounded-md">
                       <FileTextOutlined className="mr-2 text-blue-400" />
                       {record.type}
+                    </p>
+                  )}
+                  {record.testId && (
+                    <p className="text-gray-600 text-sm flex items-center bg-blue-50 p-2 rounded-md">
+                      <MedicineBoxOutlined className="mr-2 text-blue-400" />
+                      Test ID: {record.testId}
                     </p>
                   )}
                 </div>
@@ -292,20 +331,30 @@ function PatientRecordsPage() {
                 label: (
                   <span className="flex items-center">
                     <MedicineBoxOutlined className="mr-2" />
-                    Prescribed Records ({prescribedRecords.length})
+                    Doctor Prescribed Records ({doctorPrescribedRecords.length})
                   </span>
                 ),
-                children: <RecordsList records={prescribedRecords} source="Doctor Prescribed" />
+                children: <RecordsList records={doctorPrescribedRecords} source="Doctor Prescribed" />
               },
               {
                 key: 'uploaded',
                 label: (
                   <span className="flex items-center">
                     <UploadOutlined className="mr-2" />
-                    Patient Uploaded Records ({uploadedRecords.length})
+                    Patient Uploaded Records ({patientUploadedRecords.length})
                   </span>
                 ),
-                children: <RecordsList records={uploadedRecords} source="Patient Uploaded" />
+                children: <RecordsList records={patientUploadedRecords} source="Patient Uploaded" />
+              },
+              {
+                key: 'lab',
+                label: (
+                  <span className="flex items-center">
+                    <FilePdfOutlined className="mr-2" />
+                    Lab Records ({labRecords.length})
+                  </span>
+                ),
+                children: <RecordsList records={labRecords} source="Lab Records" />
               }
             ]}
             className="custom-tabs"
