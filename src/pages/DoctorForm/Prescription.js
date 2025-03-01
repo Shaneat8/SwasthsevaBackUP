@@ -282,6 +282,7 @@ function Prescription() {
         patientId: appointmentData.userId,
         appointmentId: appointmentId,
         timestamp: new Date().toISOString(),
+        uploadedBy: 'doctor', // Add this line to identify doctor-uploaded records
       };
 
       const payload = {
@@ -289,6 +290,7 @@ function Prescription() {
         patientId: appointmentData.userId,
         appointmentId: appointmentId,
         timestamp: new Date().toISOString(),
+        uploadedBy: 'doctor', // Add this line to identify doctor-uploaded records
       };
 
       // Store prescription data in Firebase
@@ -314,6 +316,7 @@ function Prescription() {
           diagnosis: values.diagnosis,
           medicines: values.medicines,
           timestamp: new Date().toISOString(),
+          uploadedBy: 'doctor', // Add this line to identify doctor-uploaded records
         };
 
         const medicineUpdateResponse = await updateMedicineQuantity(

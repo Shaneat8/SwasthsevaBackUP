@@ -29,7 +29,7 @@ function Spinner() {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [loading]);
+  }, [loading,timer]);
 
   // Don't render anything if spinner shouldn't show
   if (!showSpinner) return null;
