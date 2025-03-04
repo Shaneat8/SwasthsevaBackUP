@@ -22,7 +22,7 @@ export const BookDoctorAppointment = async (payload) => {
       rescheduleStatus: null,
     });
 
-    // Send email notification to doctor about new appointment
+    // Send email notification to patient about new appointment
     if (payload.userEmail) {
       await sendAppointmentEmail(
         payload.userEmail,
