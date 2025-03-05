@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { Table } from "antd";
+import { message, Table } from "antd";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { GetAllUsers } from "../../apicalls/users";
@@ -13,6 +13,7 @@ import firestoredb from "../../firebaseConfig";
 import Reports from "./Reports";
 import ManageFeedback from "./ManageFeedback";
 import AdminTestManagement from "./TestManagement/AdminTestManagement";
+import { useNavigate } from "react-router-dom";
 
 const EmptyState = ({ message }) => (
   <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
@@ -227,44 +228,75 @@ const AdminView = () => {
   const [doctors, setDoctors] = useState([]);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const dispatch = useDispatch();
+  const nav = useNavigate();
 
-  const fetchData = useCallback(async () => {
-    try {
-      dispatch(ShowLoader(true));
-      setError(null);
+// Combine the authentication and user check into a single useEffect
+useEffect(() => {
+  // Retrieve user from local storage or your authentication context
+  const storedUser = JSON.parse(localStorage.getItem('user'));
+  
+  if (!storedUser || storedUser.role !== 'admin') {
+    // Show error message
+    message.error('Access Denied: You do not have permission to view this page.');
+    
+    // Redirect to home page
+    nav('/');
+  } else {
+    setCurrentUser(storedUser);
+  }
+}, [nav]);
 
-      // Fetch tickets
-      const ticketsQuery = query(collection(firestoredb, "tickets"));
-      const ticketsSnapshot = await getDocs(ticketsQuery);
-      const ticketsList = ticketsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setTickets(ticketsList);
+const fetchData = useCallback(async () => {
+  // Check if user is admin before fetching data
+  if (!currentUser || currentUser.role !== 'admin') {
+    return;
+  }
 
-      // Fetch doctors
-      const doctorsResponse = await GetAllDoctors();
-      if (doctorsResponse.success) {
-        setDoctors(doctorsResponse.data || []);
-      }
+  try {
+    dispatch(ShowLoader(true));
+    setError(null);
 
-      // Fetch users
-      const usersResponse = await GetAllUsers();
-      if (usersResponse.success) {
-        setUsers(usersResponse.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setError(error.message);
-    } finally {
-      dispatch(ShowLoader(false));
+    // Fetch tickets
+    const ticketsQuery = query(collection(firestoredb, "tickets"));
+    const ticketsSnapshot = await getDocs(ticketsQuery);
+    const ticketsList = ticketsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setTickets(ticketsList);
+
+    // Fetch doctors
+    const doctorsResponse = await GetAllDoctors();
+    if (doctorsResponse.success) {
+      setDoctors(doctorsResponse.data || []);
     }
-  }, [dispatch]);
 
-  useEffect(() => {
+    // Fetch users
+    const usersResponse = await GetAllUsers();
+    if (usersResponse.success) {
+      setUsers(usersResponse.data || []);
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    setError(error.message);
+  } finally {
+    dispatch(ShowLoader(false));
+  }
+}, [dispatch, currentUser]);
+
+// Fetch data when currentUser changes and is an admin
+useEffect(() => {
+  if (currentUser?.role === 'admin') {
     fetchData();
-  }, [fetchData]);
+  }
+}, [currentUser, fetchData]);
+
+// If not an admin, return null (which prevents rendering)
+if (!currentUser || currentUser.role !== 'admin') {
+  return null;
+}
 
   const renderSection = () => {
     if (error) {

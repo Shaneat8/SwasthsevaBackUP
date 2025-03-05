@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, setLogLevel } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
@@ -15,6 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const firestoredb=getFirestore(app);
+setLogLevel('debug');
 export const auth=getAuth(app);
 export const googleProvider=new GoogleAuthProvider();
 export default firestoredb;

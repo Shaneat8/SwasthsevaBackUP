@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Table, Rate, Card, Statistic, Row, Col, Select, DatePicker } from "antd";
+import { Table, Rate, Card, Statistic, Row, Col, Select, DatePicker, Switch, message } from "antd";
 import { 
-  getAllFeedback,
-  getAverageRating, 
+  getAllFeedback, 
+  getAverageRating,
+  updateFeedbackDisplayStatus 
 } from "../../apicalls/feedback";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { useDispatch } from "react-redux";
@@ -41,15 +42,11 @@ const ManageFeedback = () => {
   const [totalReviews, setTotalReviews] = useState(0);
   const [dateRange, setDateRange] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const dispatch = useDispatch();
 
   const fetchData = useCallback( async () => {
     try {
       dispatch(ShowLoader(true));
-      setLoading(true);
-      setError(null);
 
       // Fetch all feedback
       const response = await getAllFeedback();
@@ -57,8 +54,9 @@ const ManageFeedback = () => {
         setFeedback(response.data || []);
         setFilteredFeedback(response.data || []);
       } else {
-        setError(response.message);
+        message.error(response.message);
       }
+    
 
       // Fetch average rating
       const ratingResponse = await getAverageRating();
@@ -67,9 +65,8 @@ const ManageFeedback = () => {
         setTotalReviews(ratingResponse.data.totalReviews);
       }
     } catch (err) {
-      setError(err.message || "Failed to fetch feedback data");
+      message.error(err.message || "Failed to fetch feedback data");
     } finally {
-      setLoading(false);
       dispatch(ShowLoader(false));
     }
   },[dispatch]);
@@ -103,12 +100,27 @@ const ManageFeedback = () => {
     }
   }, [feedback, dateRange, selectedRating]);
 
+  const handleDisplayToggle = async (checked, record) => {
+    try {
+      const response = await updateFeedbackDisplayStatus(record.id, checked);
+      if (response.success) {
+        // Update local state to reflect the change
+        const updatedFeedback = filteredFeedback.map(item => 
+          item.id === record.id ? { ...item, display: checked } : item
+        );
+        setFilteredFeedback(updatedFeedback);
+      }
+    } catch (error) {
+      console.error("Failed to update display status", error);
+    }
+  };
+
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
   };
 
   const handleRatingFilter = (value) => {
-    setSelectedRating(value !== "all" ? parseInt(value) : null);
+    setSelectedRating(value !== "all" ? parseFloat(value) : null);
   };
 
   const resetFilters = () => {
@@ -133,7 +145,7 @@ const ManageFeedback = () => {
       title: "Rating",
       dataIndex: "rating",
       key: "rating",
-      render: (rating) => <Rate disabled defaultValue={rating} />,
+      render: (rating) => <Rate disabled allowHalf defaultValue={rating} />,
       sorter: (a, b) => a.rating - b.rating,
     },
     {
@@ -142,25 +154,20 @@ const ManageFeedback = () => {
       key: "comment",
       render: (text) => text || "No comment provided",
     },
+    {
+      title: "Display on Home",
+      dataIndex: "display",
+      key: "display",
+      render: (display, record) => (
+        <Switch 
+          checked={display || false} 
+          onChange={(checked) => handleDisplayToggle(checked, record)}
+        />
+      ),
+    },
   ];
 
-  if (loading) {
-    return <div>Loading feedback data...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-        <p className="text-red-800">Error: {error}</p>
-        <button
-          onClick={fetchData}
-          className="mt-2 px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
+  // Rest of the component remains the same...
 
   return (
     <div className="space-y-6">
@@ -218,9 +225,13 @@ const ManageFeedback = () => {
             >
               <Option value="all">All Ratings</Option>
               <Option value="1">1 Star</Option>
+              <Option value="1.5">1.5 Stars</Option>
               <Option value="2">2 Stars</Option>
+              <Option value="2.5">2.5 Stars</Option>
               <Option value="3">3 Stars</Option>
+              <Option value="3.5">3.5 Stars</Option>
               <Option value="4">4 Stars</Option>
+              <Option value="4.5">4.5 Stars</Option>
               <Option value="5">5 Stars</Option>
             </Select>
           </div>

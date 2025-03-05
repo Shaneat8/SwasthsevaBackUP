@@ -1,227 +1,458 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import styles from "./About.module.css";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import { Power4, Elastic } from "gsap";
 
-const AboutUS = () => {
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+const About = () => {
+  const horizontalSectionRef = useRef(null);
+  const sectionsRef = useRef(null);
+  const storySectionRef = useRef(null);
+  const teamSectionRef = useRef(null);
+
+  useEffect(() => {
+    if (!horizontalSectionRef.current || !sectionsRef.current) return;
+
+    const sections = sectionsRef.current.getElementsByClassName(styles.panel);
+    if (!sections?.length) return;
+
+    const heroTimeline = gsap.timeline();
+
+    heroTimeline
+      .from(`.${styles.heroBackground}`, {
+        scale: 1.2,
+        opacity: 0,
+        duration: 2,
+        ease: Power4.easeOut
+      })
+      .from(`.${styles.medicalElements}`, {
+        scale: 0,
+        opacity: 0,
+        duration: 1.5,
+        stagger: 0.2,
+        ease: Elastic.easeOut.config(1, 0.3)
+      }, "-=1.5");
+
+    gsap.to(`.${styles.dnaHelix}`, {
+      rotationY: 360,
+      scale: "random(1.5, 2)",
+      duration: 15,
+      repeat: -1,
+      ease: "none",
+      transformOrigin: "center center"
+    });
+
+    gsap.to(`.${styles.circle}`, {
+      y: "random(-100, 100)",
+      x: "random(-100, 100)",
+      rotation: "random(-360, 360)",
+      duration: "random(4, 8)",
+      repeat: -1,
+      yoyo: true,
+      ease: "none",
+      stagger: {
+        amount: 3,
+        from: "random"
+      }
+    });
+
+    gsap.to(`.${styles.medicalCross}`, {
+      rotation: "random(-360, 360)",
+      scale: "random(1.5, 2.5)",
+      x: "random(-150, 150)",
+      y: "random(-150, 150)",
+      duration: "random(10, 15)",
+      repeat: -1,
+      yoyo: true,
+      ease: "power1.inOut",
+      stagger: {
+        amount: 4,
+        from: "random"
+      }
+    });
+
+    gsap.to(`.${styles.pulseRing}`, {
+      scale: 2.5,
+      opacity: 0,
+      duration: 3,
+      repeat: -1,
+      ease: "power2.out",
+      stagger: {
+        amount: 2,
+        from: "center"
+      }
+    });
+
+    heroTimeline
+      .from(`.${styles.heroTitle}`, {
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out"
+      })
+      .from(`.${styles.logoFirst}, .${styles.logoSecond}`, {
+        opacity: 0,
+        scale: 0.8,
+        y: 30,
+        duration: 1.2,
+        stagger: 0.2,
+        ease: "back.out(1.7)"
+      }, "-=0.5")
+      .from(`.${styles.heroDescription}`, {
+        opacity: 0,
+        y: 30,
+        duration: 1,
+        ease: "power3.out"
+      }, "-=0.7")
+      .from(`.${styles.heroCTA}`, {
+        opacity: 0,
+        y: 30,
+        duration: 0.8,
+        ease: "power3.out"
+      }, "-=0.5");
+
+    const width = horizontalSectionRef.current?.offsetWidth || window.innerWidth;
+    let scrollTween = gsap.to(Array.from(sections), {
+      xPercent: -100 * (sections.length - 1),
+      ease: "none",
+      scrollTrigger: {
+        trigger: horizontalSectionRef.current,
+        start: "top top",
+        end: () => `+=${width * 2.5}`,
+        pin: true,
+        scrub: 1.5,
+        snap: {
+          snapTo: 1 / (sections.length - 1),
+          duration: { min: 0.4, max: 0.7 },
+          delay: 0.3,
+          ease: "power2.inOut"
+        },
+        anticipatePin: 1
+      }
+    });
+
+    Array.from(sections).forEach((panel) => {
+      const content = panel.getElementsByClassName(styles.panelContent)[0];
+      const title = panel.querySelector('h2');
+      const features = panel.getElementsByClassName(styles.featureItem);
+
+      if (content && title && features.length) {
+        gsap.fromTo([title, content], {
+          opacity: 0,
+          y: 100,
+          rotationX: -30
+        }, {
+          opacity: 1,
+          y: 0,
+          rotationX: 0,
+          duration: 1.2,
+          ease: "power4.out",
+          scrollTrigger: {
+            trigger: panel,
+            containerAnimation: scrollTween,
+            start: "left center",
+            toggleActions: "play none none reverse"
+          }
+        });
+
+        gsap.fromTo(features, {
+          opacity: 0,
+          scale: 0.8,
+          y: 150,
+          rotationX: -60
+        }, {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          rotationX: 0,
+          duration: 0.6,
+          stagger: 0.2,
+          ease: "power4.out",
+          scrollTrigger: {
+            trigger: panel,
+            containerAnimation: scrollTween,
+            start: "left center",
+            toggleActions: "play none none reverse"
+          }
+        });
+      }
+    });
+
+    const storyText = storySectionRef.current?.getElementsByClassName(styles.storyParagraph)[0];
+    const storyTitle = storySectionRef.current?.getElementsByClassName(styles.storyTitle)[0];
+    
+    if (storyText && storyTitle) {
+      gsap.fromTo(storyTitle, {
+        opacity: 0,
+        y: 50
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        scrollTrigger: {
+          trigger: storySectionRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse"
+        }
+      });
+
+      gsap.fromTo(storyText, {
+        opacity: 0,
+        y: 50
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        delay: 0.3,
+        scrollTrigger: {
+          trigger: storySectionRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse"
+        }
+      });
+    }
+
+    const teamCards = teamSectionRef.current?.getElementsByClassName(styles.teamCard);
+    if (teamCards?.length) {
+      gsap.fromTo(Array.from(teamCards), {
+        opacity: 0,
+        y: 100,
+        rotationY: 45
+      }, {
+        opacity: 1,
+        y: 0,
+        rotationY: 0,
+        duration: 1,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: teamSectionRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse"
+        }
+      });
+    }
+
+    return () => {
+      ScrollTrigger.getAll().forEach(t => t.kill());
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Hero Section */}
-      <section className="py-20 px-4 text-center">
-        <h1 className="text-5xl font-bold text-blue-800 mb-6">Swasthya Seva</h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Revolutionizing healthcare management with a comprehensive platform
-          connecting patients, doctors, and administrators.
-        </p>
-      </section>
-
-      {/* About Platform Section */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-blue-800 mb-4">
-            Our Platform
-          </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Swasthya Seva is built to streamline healthcare processes, enhance
-            patient care, and enable efficient medical management.
+    <div className={styles.container}>
+      <section className={styles.heroSection}>
+        <div className={styles.heroBackground}>
+          <div className={styles.medicalElements}>
+            <div className={styles.pulse}></div>
+            <div className={styles.heartbeat}></div>
+            <div className={styles.circles}>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={styles.circle}></div>
+              ))}
+            </div>
+            <div className={styles.dnaHelix}></div>
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={`pulse-ring-${i}`}
+                className={styles.pulseRing}
+                style={{
+                  width: `${(i + 1) * 100}px`,
+                  height: `${(i + 1) * 100}px`,
+                  animationDelay: `${i * 0.5}s`
+                }}
+              ></div>
+            ))}
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={`cross-${i}`}
+                className={styles.medicalCross}
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${i * 0.7}s`
+                }}
+              ></div>
+            ))}
+          </div>
+        </div>
+        <div className={styles.heroContent}>
+          <h1 className={styles.heroTitle}>
+            <span className={styles.logoFirst}>Swasthya</span>
+            <span className={styles.logoSecond}>Seva</span>
+          </h1>
+          <p className={styles.heroDescription}>
+            Revolutionizing healthcare management with a comprehensive platform
+            connecting patients, doctors, and administrators.
           </p>
-        </div>
-
-        {/* User Features */}
-        <div className="mb-20">
-          <h3 className="text-2xl font-bold text-blue-700 mb-8 flex items-center">
-            <span className="mr-2 text-blue-600">👥</span>
-            For Patients
-          </h3>
-          <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon="📅"
-              title="Easy Appointment Booking"
-              description="Schedule appointments and lab tests with just a few clicks, saving time and reducing hassle."
-            />
-            <FeatureCard
-              icon="📄"
-              title="Medical Record Management"
-              description="Securely store and access your medical reports and visit summaries in one centralized location."
-            />
-            <FeatureCard
-              icon="🔔"
-              title="Timely Reminders"
-              description="Receive email reminders for upcoming appointments and medication schedules."
-            />
-            <FeatureCard
-              icon="💬"
-              title="Support & Feedback"
-              description="Submit feedback or raise support tickets for any assistance you need with our platform."
-            />
-          </div>
-        </div>
-
-        {/* Doctor Features */}
-        <div className="mb-20">
-          <h3 className="text-2xl font-bold text-blue-700 mb-8 flex items-center">
-            <span className="mr-2 text-blue-600">❤️</span>
-            For Doctors
-          </h3>
-          <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon="👥"
-              title="Enhanced Reach"
-              description="Connect with more patients and expand your practice through our platform."
-            />
-            <FeatureCard
-              icon="📄"
-              title="Comprehensive Patient History"
-              description="Access complete patient histories including past diagnoses to provide better care."
-            />
-            <FeatureCard
-              icon="📅"
-              title="Appointment Management"
-              description="Easily schedule, reschedule, and manage your appointments with an intuitive interface."
-            />
-            <FeatureCard
-              icon="📋"
-              title="Medication Management"
-              description="Check medication availability in real-time and suggest alternatives when needed."
-            />
-          </div>
-        </div>
-
-        {/* Admin Features */}
-        <div className="mb-20">
-          <h3 className="text-2xl font-bold text-blue-700 mb-8 flex items-center">
-            <span className="mr-2 text-blue-600">📊</span>
-            For Administrators
-          </h3>
-          <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon="👥"
-              title="User Management"
-              description="Approve doctors, manage users, and maintain platform integrity."
-            />
-            <FeatureCard
-              icon="⚠️"
-              title="Complaint Resolution"
-              description="Track and resolve complaints with an automated 48-hour resolution system."
-            />
-            <FeatureCard
-              icon="📊"
-              title="Analytics & Reporting"
-              description="Generate comprehensive reports on platform usage and performance metrics."
-            />
+          <div className={styles.heroCTA}>
+            <button className={styles.primaryButton}>
+              Get Started
+              <span className={styles.buttonIcon}>→</span>
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Our Story Section */}
-      <section className="bg-blue-800 text-white py-16">
-        <div className="max-w-5xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-8 ">
-            Why We Built Swasthya Seva
-          </h2>
-          <p className="text-lg mb-6 text-white">
+      <section ref={horizontalSectionRef} className={styles.horizontalSection}>
+        <div ref={sectionsRef} className={styles.sectionWrapper}>
+          <div className={`${styles.panel} ${styles.patientsPanel}`}>
+            <div className={styles.panelContent}>
+              <h2>For Patients</h2>
+              <div className={styles.featuresList}>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>01</div>
+                    <h3>Easy Appointments</h3>
+                  </div>
+                  <p>Schedule appointments with just a few clicks. Streamlined booking process for your convenience.</p>
+                </div>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>02</div>
+                    <h3>Medical Records</h3>
+                  </div>
+                  <p>Secure access to your complete medical history. All your health information in one place.</p>
+                </div>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>03</div>
+                    <h3>Smart Reminders</h3>
+                  </div>
+                  <p>Timely notifications for appointments and medications. Stay on top of your health schedule.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`${styles.panel} ${styles.doctorsPanel}`}>
+            <div className={styles.panelContent}>
+              <h2>For Doctors</h2>
+              <div className={styles.featuresList}>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>04</div>
+                    <h3>Patient Management</h3>
+                  </div>
+                  <p>Efficiently manage your patient roster with comprehensive tools and insights.</p>
+                </div>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>05</div>
+                    <h3>Medical Analytics</h3>
+                  </div>
+                  <p>Data-driven insights for better care and improved patient outcomes.</p>
+                </div>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>06</div>
+                    <h3>Digital Prescriptions</h3>
+                  </div>
+                  <p>Write and manage prescriptions digitally with automated verification.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`${styles.panel} ${styles.adminsPanel}`}>
+            <div className={styles.panelContent}>
+              <h2>For Administrators</h2>
+              <div className={styles.featuresList}>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>07</div>
+                    <h3>System Control</h3>
+                  </div>
+                  <p>Complete platform management with advanced configuration options.</p>
+                </div>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>08</div>
+                    <h3>Analytics Dashboard</h3>
+                  </div>
+                  <p>Real-time performance metrics and comprehensive reporting tools.</p>
+                </div>
+                <div className={styles.featureItem}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureNumber}>09</div>
+                    <h3>Security Management</h3>
+                  </div>
+                  <p>Maintain data security and compliance with industry standards.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section ref={storySectionRef} className={styles.storySection}>
+        <div className={styles.storyContainer}>
+          <h2 className={styles.storyTitle}>Our Journey</h2>
+          <p className={styles.storyParagraph}>
             We recognized the challenges in healthcare management—fragmented
             records, communication gaps between doctors and patients, and
             administrative inefficiencies. Swasthya Seva was born from our
             vision to create an integrated ecosystem where healthcare becomes
             more accessible, efficient, and patient-centric.
           </p>
-          <p className="text-lg mb-6 text-white">
-            We believe health is something that should never be compromised. Yet
-            we've seen how patients from rural villages travel long distances
-            only to make multiple trips because they lack proper documentation
-            or medical history.
-          </p>
-          <p className="text-lg mb-6 text-white">
-            Our platform helps doctors make more precise treatment decisions by
-            providing complete patient records in one place. And for patients,
-            especially those from remote areas, we've designed a system that's
-            simple and intuitive to use, eliminating unnecessary hospital
-            visits.
-          </p>
-          <p className="text-lg mb-6 text-white">
-            Using cutting-edge technologies like React for the frontend and
-            Firebase for backend services, we've created a platform that not
-            only addresses current healthcare challenges but is also scalable
-            for future innovations.
-          </p>
-          <p className="text-lg text-white">
-            In the coming months, we plan to upload tutorial videos to our
-            website, helping both healthcare providers and patients make the
-            most of Swasthya Seva's features.
-          </p>
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="max-w-5xl mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-blue-800 mb-4">
-            Meet Our Team
-          </h2>
-          <p className="text-lg text-gray-600">
+      <section ref={teamSectionRef} className={styles.teamSection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Meet Our Team</h2>
+          <p className={styles.sectionDescription}>
             The brilliant minds behind Swasthya Seva, committed to transforming
             healthcare management.
           </p>
         </div>
-
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className={styles.teamGrid}>
           <TeamCard
             name="Ambuj Tripathi"
-            role="Backend & Developer"
-            imageUrl="/api/placeholder/300/300"
+            role="Backend Developer"
+            imageUrl="/path/to/ambuj-image.jpg"
           />
           <TeamCard
             name="Manya Choradiya"
-            role="UX Designer & Developer & Backend"
-            imageUrl="/api/placeholder/300/300"
+            role="UX Designer & Backend Developer"
+            imageUrl="/path/to/manya-image.jpg"
           />
           <TeamCard
             name="Daksh Dhola"
             role="UX Designer & Developer"
-            imageUrl="/api/placeholder/300/300"
+            imageUrl="/path/to/daksh-image.jpg"
           />
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-700 to-blue-900 text-white py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold mb-6">
-          Join the Healthcare Revolution
-        </h2>
-        <p className="text-xl max-w-3xl mx-auto mb-8">
+      <section className={styles.ctaSection}>
+        <h2 className={styles.ctaTitle}>Join the Healthcare Revolution</h2>
+        <p className={styles.ctaDescription}>
           Experience a new standard in healthcare management with Swasthya Seva.
         </p>
-        <button className="bg-white text-blue-800 px-8 py-3 rounded-full font-bold text-lg hover:bg-blue-100 transition-colors flex items-center mx-auto">
+        <button className={styles.ctaButton}>
           Get Started
-          <span className="ml-2">→</span>
+          <span className={styles.ctaButtonIcon}>→</span>
         </button>
       </section>
     </div>
   );
 };
 
-// Feature Card Component
-const FeatureCard = ({ icon, title, description }) => {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100">
-      <div className="text-blue-600 mb-4 text-2xl">{icon}</div>
-      <h4 className="text-xl font-semibold mb-2 text-gray-800">{title}</h4>
-      <p className="text-gray-600">{description}</p>
-    </div>
-  );
-};
-
-// Team Card Component
 const TeamCard = ({ name, role, imageUrl }) => {
   return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-      <div className="h-64 bg-gray-200">
-        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+    <div className={styles.teamCard}>
+      <div className={styles.teamImageContainer}>
+        <img src={imageUrl} alt={name} className={styles.teamImage} />
       </div>
-      <div className="p-6 text-center">
-        <h4 className="text-xl font-bold text-gray-800 mb-1">{name}</h4>
-        <p className="text-blue-600">{role}</p>
+      <div className={styles.teamInfo}>
+        <h4 className={styles.teamName}>{name}</h4>
+        <p className={styles.teamRole}>{role}</p>
       </div>
     </div>
   );
 };
 
-export default AboutUS;
+export default About;

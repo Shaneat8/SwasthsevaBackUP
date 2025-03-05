@@ -9,14 +9,11 @@ import {
   Timestamp,
   query,
   orderBy,
-  where,
   serverTimestamp,
 } from "firebase/firestore";
-import { message } from "antd";
 import { jsPDF } from "jspdf";
 import moment from "moment";
 import firestoredb from "../firebaseConfig";
-import { addPatientUploadedRecord, addUserRecord } from "./recordpdf";
 
 // Base URL for API calls
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
@@ -162,33 +159,27 @@ export const CreateLabTest = async (labTestData) => {
  * @param {string} id - The ID of the lab test to delete
  * @returns {Promise} Promise object representing the API response
  */
-export const DeleteLabTest = async (id) => {
-  try {
-    // Get auth token from local storage
-    const token = localStorage.getItem("token");
+// export const DeleteLabTest = async (id) => {
+//   try {
+//     // Get auth token from local storage
+//     const token = localStorage.getItem("token");
 
-    // Make API request with auth header
-    const response = await axios.delete(`${API_URL}/lab-tests/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+//     // Make API request with auth heade
+//     // Return successful response
+//     return {
+//       success: true,
+//       message: "Lab test deleted successfully",
+//     };
+//   } catch (error) {
+//     // Handle errors
+//     console.error("Error deleting lab test:", error);
 
-    // Return successful response
-    return {
-      success: true,
-      message: "Lab test deleted successfully",
-    };
-  } catch (error) {
-    // Handle errors
-    console.error("Error deleting lab test:", error);
-
-    return {
-      success: false,
-      message: error.response?.data?.message || "Error deleting lab test",
-    };
-  }
-};
+//     return {
+//       success: false,
+//       message: error.response?.data?.message || "Error deleting lab test",
+//     };
+//   }
+// };
 
 /**
  * Update lab test results

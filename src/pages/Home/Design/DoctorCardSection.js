@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { message } from "antd";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom"; // Import useNavigate hook
 import styles from "./DoctorCardSection.module.css";
 import {GetAllDoctors} from "../../../apicalls/doctors";
 import {ShowLoader} from "../../../redux/loaderSlice";
@@ -11,6 +12,7 @@ const DoctorCardSection = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState("All Experts");
   const dispatch = useDispatch();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   // Get all doctor data
   const getData = useCallback(async () => {
@@ -126,6 +128,12 @@ const DoctorCardSection = () => {
     return gradients[doctor.gradientIndex];
   };
 
+  // Handle doctor card click
+  const handleDoctorClick = (doctor) => {
+    // Navigate to book-appointment page with doctor's ID
+    navigate(`/book-appointment/${doctor._id || doctor.id}`);
+  };
+
   return (
     <section className={styles.doctorsSection}>
       <div className={styles.sectionHeader}>
@@ -165,6 +173,8 @@ const DoctorCardSection = () => {
                 <div 
                   key={doctor._id || doctor.id || index}
                   className={styles.doctorCard}
+                  onClick={() => handleDoctorClick(doctor)} // Add onClick handler
+                  style={{ cursor: 'pointer' }} // Add pointer cursor for better UX
                 >
                   {/* Image container with gradient overlay */}
                   <div 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Button, 
   Col, 
@@ -13,14 +13,15 @@ import {
   Steps, 
   Checkbox,
   Alert,
-  Upload
+  Upload,
+  Image
 } from "antd";
+import ImgCrop from "antd-img-crop";
 import { 
   UserOutlined, 
   PhoneOutlined, 
   MailOutlined, 
   IdcardOutlined, 
-  HomeOutlined,
   MedicineBoxOutlined,
   ClockCircleOutlined,
   TrophyOutlined,
@@ -34,7 +35,7 @@ import { AddDoctor, CheckIfDoctorApplied, UpdateDoctor } from "../../apicalls/do
 import { useNavigate } from "react-router-dom";
 import "./DoctorForm.module.css";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { TextArea } = Input;
 
 function Doctor() {
@@ -44,10 +45,14 @@ function Doctor() {
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [loading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({});
+  const [imageUrl, setImageUrl] = useState('');
 
   const specialistOptions = [
     { value: "Dermatologist", label: "Dermatologist" },
@@ -83,11 +88,13 @@ function Doctor() {
     "Sunday"
   ];
 
-  const getBase64 = (img, callback) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => callback(reader.result));
-    reader.readAsDataURL(img);
-  };
+  const getBase64 = (file) => 
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
 
   const beforeUpload = (file) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
@@ -104,16 +111,28 @@ function Doctor() {
     return isValidFormat && isLt2M;
   };
 
-  const handleChange = (info) => {
-    if (info.file.status === 'uploading') {
-      setLoading(true);
-      return;
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj);
     }
-    if (info.file.status === 'done') {
-      getBase64(info.file.originFileObj, (url) => {
-        setLoading(false);
-        setImageUrl(url);
+    setPreviewImage(file.url || file.preview);
+    setPreviewOpen(true);
+  };
+
+  const handleChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+    // Update imageUrl for the form submission if there is at least one file
+    if (newFileList.length > 0 && newFileList[0]?.originFileObj) {
+      // Use getBase64 to convert file to base64 string
+      getBase64(newFileList[0].originFileObj).then(base64 => {
+        setImageUrl(base64);
       });
+    } else if (newFileList.length > 0 && newFileList[0]?.thumbUrl) {
+      setImageUrl(newFileList[0].thumbUrl);
+    } else if (newFileList.length > 0 && newFileList[0]?.url) {
+      setImageUrl(newFileList[0].url);
+    } else {
+      setImageUrl('');
     }
   };
 
@@ -123,19 +142,27 @@ function Doctor() {
     }, 0);
   };
 
-  const uploadButton = (
-    <div>
-      {loading ? <LoadingOutlined /> : <PlusOutlined />}
-      <div style={{ marginTop: 8 }}>Upload Photo</div>
-    </div>
-  );
-
   const nextStep = () => {
-    form.validateFields()
-      .then(() => {
+    const fieldsToValidate = [];
+    
+    // Determine which fields to validate based on current step
+    if (currentStep === 0) {
+      fieldsToValidate.push('firstName', 'lastName', 'email', 'phone', 'reg_id', 'address');
+    } else if (currentStep === 1) {
+      fieldsToValidate.push('Specialist', 'experience', 'Qualification', 'summary');
+    }
+    
+    form.validateFields(fieldsToValidate)
+      .then((values) => {
+        // Save the current step's data
+        setFormData(prevData => ({
+          ...prevData,
+          ...values
+        }));
         setCurrentStep(currentStep + 1);
       })
-      .catch(() => {
+      .catch((errorInfo) => {
+        console.log("Validation failed:", errorInfo);
         message.error("Please fill all required fields before proceeding");
       });
   };
@@ -153,22 +180,34 @@ function Doctor() {
     
     try {
       dispatch(ShowLoader(true));
-      const payload = {
-        ...values,
+      
+      // Explicitly combine all data from all steps
+      const completeFormData = {
+        ...formData,  // This contains data from previous steps
+        ...values,    // This contains data from the current step
         days,
         photoUrl: imageUrl,
-        userId: JSON.parse(localStorage.getItem("user")).id,
+        userId: JSON.parse(localStorage.getItem("user"))?.id,
         status: "pending",
         role: "doctor",
       };
       
+      // Convert any undefined values to empty strings
+      Object.keys(completeFormData).forEach(key => {
+        if (completeFormData[key] === undefined) {
+          completeFormData[key] = '';
+        }
+      });
+      
+      console.log("Submitting complete form data:", completeFormData);
+      
       let response = null;
       if (alreadyApproved) {
-        payload.id = JSON.parse(localStorage.getItem("user")).id;
-        payload.status = "approved";
-        response = await UpdateDoctor(payload);
+        completeFormData.id = JSON.parse(localStorage.getItem("user"))?.id;
+        completeFormData.status = "approved";
+        response = await UpdateDoctor(completeFormData);
       } else {
-        response = await AddDoctor(payload);
+        response = await AddDoctor(completeFormData);
       }
       
       dispatch(ShowLoader(false));
@@ -180,10 +219,9 @@ function Doctor() {
       }
     } catch (error) {
       dispatch(ShowLoader(false));
-      message.error(error.message);
+      message.error(error.message || "Something went wrong");
     }
   };
-
   const handleDayChange = (day) => {
     if (days.includes(day)) {
       setDays(days.filter(d => d !== day));
@@ -192,29 +230,52 @@ function Doctor() {
     }
   };
 
-  const CheckAlreadyApplied = async () => {
+  const CheckAlreadyApplied = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
-      const response = await CheckIfDoctorApplied(JSON.parse(localStorage.getItem("user")).id);
+      const userId = JSON.parse(localStorage.getItem("user"))?.id;
+      if (!userId) {
+        throw new Error("User not found");
+      }
+      
+      const response = await CheckIfDoctorApplied(userId);
       if (response.success) {
         setAlreadyApplied(true);
         if (response.data.status === "approved") {
           setAlreadyApproved(true);
           form.setFieldsValue(response.data);
-          setDays(response.data.days);
-          setImageUrl(response.data.photoUrl || '');
+          setFormData(response.data);
+          setDays(response.data.days || []);
+          
+          // Set image data if exists
+          if (response.data.photoUrl) {
+            setImageUrl(response.data.photoUrl);
+            setFileList([{
+              uid: '-1',
+              name: 'profile-image.jpg',
+              status: 'done',
+              url: response.data.photoUrl,
+            }]);
+          }
         }
       }
       dispatch(ShowLoader(false));
     } catch (error) {
       dispatch(ShowLoader(false));
-      message.error(error.message);
+      message.error(error.message || "Failed to check application status");
     }
-  };
+  }, [dispatch, form]);
 
   useEffect(() => {
     CheckAlreadyApplied();
-  }, []);
+  }, [CheckAlreadyApplied]);
+
+  const uploadButton = (
+    <div>
+      {loading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div style={{ marginTop: 8 }}>Upload</div>
+    </div>
+  );
 
   const steps = [
     {
@@ -278,36 +339,28 @@ function Doctor() {
           <Col xs={24} md={12}>
             <Card className="info-card" bordered={false}>
               <Row gutter={[16, 16]} justify="center">
-              <Col span={24} className="text-center">
+                <Col span={24} className="text-center">
                   <Form.Item
                     label="Doctor's Photo"
                     name="photo"
                     className="doctor-profile-uploader"
                   >
-                    <Upload
-                      name="avatar"
-                      listType="picture-card"
-                      className="doctor-profile-container"
-                      showUploadList={false}
-                      beforeUpload={beforeUpload}
-                      onChange={handleChange}
-                      customRequest={customRequest}
-                    >
-                      {imageUrl ? (
-                        <div className="doctor-profile-preview">
-                          <img src={imageUrl} alt="doctor" />
-                          <div className="doctor-profile-overlay">Click to Change (Max: 2MB)</div>
-                        </div>
-                      ) : (
-                        <div className="doctor-profile-upload-box">
-                          {loading ? <LoadingOutlined /> : <PlusOutlined />}
-                          <div style={{ marginTop: 8 }}>Upload Photo</div>
-                        </div>
-                      )}
-                    </Upload>
-                    <Text type="secondary" className="doctor-profile-hint">
+                    <ImgCrop rotationSlider>
+                      <Upload
+                        listType="picture-card"
+                        fileList={fileList}
+                        beforeUpload={beforeUpload}
+                        onPreview={handlePreview}
+                        onChange={handleChange}
+                        customRequest={customRequest}
+                        className="avatar"
+                      >
+                        {fileList.length >= 1 ? null : uploadButton}
+                      </Upload>
+                    </ImgCrop>
+                    <div className="doctor-profile-hint">
                       Upload a professional photo (JPG/PNG/WEBP, max 2MB)
-                    </Text>
+                    </div>
                   </Form.Item>
                 </Col>
 
@@ -338,7 +391,6 @@ function Doctor() {
                 <TextArea
                   placeholder="Enter your complete address"
                   autoSize={{ minRows: 3, maxRows: 5 }}
-                  prefix={<HomeOutlined />}
                 />
               </Form.Item>
             </Card>
@@ -400,7 +452,6 @@ function Doctor() {
                   <Form.Item
                     label="Professional Summary"
                     name="summary"
-                    rules={[{ required: true, message: "Professional summary is required" }]}
                   >
                     <TextArea
                       placeholder="Briefly describe your professional background, expertise, and approach to patient care"
@@ -524,6 +575,7 @@ function Doctor() {
             layout="vertical"
             onFinish={onFinish}
             className="registration-form"
+            initialValues={formData}
           >
             <div className="steps-content">
               {steps[currentStep].content}
@@ -571,6 +623,19 @@ function Doctor() {
             showIcon
           />
         </Card>
+      )}
+      
+      {/* Image Preview */}
+      {previewImage && (
+        <Image
+          wrapperStyle={{ display: 'none' }}
+          preview={{
+            visible: previewOpen,
+            onVisibleChange: (visible) => setPreviewOpen(visible),
+            afterOpenChange: (visible) => !visible && setPreviewImage(''),
+          }}
+          src={previewImage}
+        />
       )}
     </div>
   );

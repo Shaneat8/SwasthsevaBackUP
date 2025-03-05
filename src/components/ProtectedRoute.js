@@ -74,7 +74,7 @@ function ProtectedRoute({ children }) {
     if (user.role === "admin") {
       navigate("/AdminView");
     } else if (user.role === "doctor") {
-      navigate("/doctor-profile");
+      navigate("/doctor");
     } else if(user.isGuest) {
       navigate("/");
     } else {

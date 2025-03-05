@@ -1,0 +1,515 @@
+/* CSS Variables */
+:root {
+    --primary-color: #1e40af;
+    --secondary-color: #3b82f6;
+    --text-primary: #1f2937;
+    --text-secondary: #4b5563;
+    --bg-gradient-start: #e6f0ff;
+    --bg-gradient-end: #ffffff;
+    --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Base Styles */
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  /* Main Container */
+  .container {
+    position: relative;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+    overflow-x: hidden;
+  }
+  
+  /* Hero Section */
+  .heroSection {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.05), rgba(59, 130, 246, 0.1));
+    text-align: center;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  .heroBackground {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.05)
+    );
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Medical Elements */
+  .dnaHelix {
+    position: absolute;
+    width: 150px;
+    height: 300px;
+    right: 15%;
+    top: 20%;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    opacity: 0.15;
+    filter: blur(2px);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 50%;
+    filter: blur(3px);
+  }
+  
+  .pulse::before,
+  .pulse::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: pulseEffect 2s infinite;
+  }
+  
+  .pulse::after {
+    animation-delay: 1s;
+  }
+  
+  .heartbeat {
+    position: absolute;
+    top: 30%;
+    right: 20%;
+    width: 300px;
+    height: 120px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(59, 130, 246, 0.1) 50%, 
+      transparent 100%
+    );
+    clip-path: path('M 0,40 L 40,40 L 80,0 L 120,80 L 160,40 L 200,40');
+    animation: heartbeatEffect 1.5s infinite ease-in-out;
+  }
+  
+  .circles {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .circle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 50%;
+    filter: blur(2px);
+  }
+  
+  .pulseRing {
+    position: absolute;
+    border: 4px solid var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.15;
+    filter: blur(2px);
+  }
+  
+  .medicalCross {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    opacity: 0.15;
+    filter: blur(1px);
+    clip-path: polygon(40% 0%, 60% 0%, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0% 60%, 0% 40%, 40% 40%);
+  }
+  
+  /* Hero Content */
+  .heroContent {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  
+  .heroTitle {
+    font-size: 5rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--text-primary);
+  }
+  
+  .logoFirst,
+  .logoSecond {
+    display: inline-block;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-fill-color: transparent;
+  }
+  
+  .heroDescription {
+    font-size: 1.5rem;
+    max-width: 800px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0 auto 3rem;
+    text-align: center;
+  }
+  
+  .heroCTA {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .primaryButton {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 1.2rem 3rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .primaryButton:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  }
+  
+  .buttonIcon {
+    transition: transform 0.3s var(--transition-smooth);
+  }
+  
+  .primaryButton:hover .buttonIcon {
+    transform: translateX(5px);
+  }
+  
+  /* Horizontal Section */
+  .horizontalSection {
+    height: 100vh;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+  }
+  
+  .sectionWrapper {
+    height: 100%;
+    width: 300%;
+    display: flex;
+    position: relative;
+  }
+  
+  /* Panel Styles */
+  .panel {
+    width: 100vw;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+  }
+  
+  .panelContent {
+    max-width: 1200px;
+    width: 100%;
+    padding: 4rem 2rem;
+  }
+  
+  .panel h2 {
+    font-size: 4rem;
+    font-weight: 800;
+    margin-bottom: 3rem;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  
+  /* Features */
+  .featuresList {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem;
+    margin-top: 3rem;
+  }
+  
+  .featureItem {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: all 0.6s var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .featureHeader {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+  }
+  
+  .featureNumber {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    opacity: 0.5;
+  }
+  
+  .featureItem h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+  }
+  
+  .featureItem p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  
+  .featureItem:hover {
+    transform: translateY(-20px) rotateX(10deg) rotateY(-10deg);
+    box-shadow: 
+      0 30px 60px rgba(0, 0, 0, 0.15),
+      0 0 30px rgba(59, 130, 246, 0.2);
+  }
+  
+  /* Story Section */
+  .storySection {
+    padding: 6rem 2rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .storyContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .storyTitle {
+    font-size: 3.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .storyParagraph {
+    font-size: 1.25rem;
+    line-height: 1.8;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  /* Team Section */
+  .teamSection {
+    padding: 6rem 2rem;
+    background: var(--bg-gradient-end);
+  }
+  
+  .sectionHeader {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+  
+  .sectionTitle {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
+  
+  .sectionDescription {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  
+  .teamGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .teamCard {
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.6s var(--transition-smooth);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .teamImageContainer {
+    height: 300px;
+    overflow: hidden;
+  }
+  
+  .teamImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--transition-smooth);
+  }
+  
+  .teamInfo {
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .teamName {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+  
+  .teamRole {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+  }
+  
+  /* CTA Section */
+  .ctaSection {
+    padding: 6rem 2rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    text-align: center;
+  }
+  
+  .ctaTitle {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+  
+  .ctaDescription {
+    font-size: 1.25rem;
+    max-width: 700px;
+    margin: 0 auto 3rem;
+  }
+  
+  .ctaButton {
+    background: white;
+    color: var(--primary-color);
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 1rem 3rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .ctaButtonIcon {
+    transition: transform 0.3s var(--transition-smooth);
+  }
+  
+  .ctaButton:hover .ctaButtonIcon {
+    transform: translateX(5px);
+  }
+  
+  /* Animations */
+  @keyframes pulseEffect {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  
+  @keyframes heartbeatEffect {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  
+  /* Media Queries */
+  @media (max-width: 1200px) {
+    .heroTitle { font-size: 4rem; }
+    .featuresList { gap: 2rem; }
+  }
+  
+  @media (max-width: 992px) {
+    .featuresList { grid-template-columns: repeat(2, 1fr); }
+    .teamGrid { grid-template-columns: repeat(2, 1fr); }
+  }
+  
+  @media (max-width: 768px) {
+    .heroTitle { font-size: 3rem; }
+    .heroDescription { font-size: 1.25rem; }
+    .featuresList { 
+      grid-template-columns: 1fr;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .teamGrid { 
+      grid-template-columns: 1fr;
+      max-width: 400px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .heroTitle { font-size: 2.5rem; }
+    .featureItem h3 { font-size: 1.5rem; }
+    .featureItem p { font-size: 1rem; }
+  }
+  
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }

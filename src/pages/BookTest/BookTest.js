@@ -10,7 +10,7 @@ import {
   InputNumber,
   Result,
 } from "antd";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { ShowLoader } from "../../redux/loaderSlice";
@@ -106,7 +106,7 @@ function BookTest() {
   ];
 
   // Fetch user profile data
-  const fetchUserProfile = async (userId) => {
+  const fetchUserProfile = useCallback( async (userId) => {
     try {
       dispatch(ShowLoader(true));
 
@@ -133,7 +133,7 @@ function BookTest() {
       message.error("Failed to fetch user profile. Please try again.");
       return null;
     }
-  };
+  },[dispatch]);
 
   useEffect(() => {
     const checkProfileCompletion = async () => {
@@ -215,7 +215,7 @@ function BookTest() {
     };
 
     checkProfileCompletion();
-  }, [nav, dispatch]);
+  }, [nav, dispatch,fetchUserProfile]);
 
   // Define fetchUserTests at component level for use in other functions
   const fetchUserTests = async (userId) => {

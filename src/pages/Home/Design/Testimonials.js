@@ -1,43 +1,42 @@
 import React, { useEffect, useState, useRef } from 'react';
 import styles from './Testimonials.module.css';
+import { getAllFeedback } from '../../../apicalls/feedback';
 
 const Testimonials = () => {
   const [position, setPosition] = useState(0);
+  const [testimonials, setTestimonials] = useState([]);
   const sliderRef = useRef(null);
   
-  // Testimonial data array
-  const testimonials = [
-    {
-      id: 1,
-      text: "The medical staff was incredibly caring and professional. They made my recovery journey much easier with their support.",
-      author: "Sarah Johnson",
-      title: "Patient"
-    },
-    {
-      id: 2,
-      text: "Outstanding healthcare service. The doctors took time to explain everything and ensured I received the best treatment possible.",
-      author: "Mark Williams",
-      title: "Patient"
-    },
-    {
-      id: 3,
-      text: "I was amazed by the modern facilities and technology. The entire process from diagnosis to treatment was seamless and efficient.",
-      author: "Jessica Chen",
-      title: "Patient"
-    },
-    {
-      id: 4,
-      text: "The nursing staff provided exceptional care during my stay. Their attention to detail and compassion made all the difference.",
-      author: "Robert Davis",
-      title: "Patient"
-    },
-    {
-      id: 5,
-      text: "From the moment I walked in, I felt taken care of. The staff's expertise and warm approach helped ease my anxiety completely.",
-      author: "Emily Taylor",
-      title: "Patient"
-    }
-  ];
+  useEffect(() => {
+    // Function to fetch testimonials that have display set to true
+    const fetchTestimonials = async () => {
+      try {
+        // Use getAllFeedback to fetch all feedback
+        const response = await getAllFeedback();
+        
+        if (response.success) {
+          // Filter testimonials to only include those with display set to true
+          const displayTestimonials = response.data
+            .filter(feedback => feedback.display)
+            .map(feedback => ({
+              id: feedback.id,
+              text: feedback.comment || "No comment provided",
+              author: feedback.userName || `User ${feedback.userId}`, 
+              title: `${feedback.userRole || 'User'} | ${feedback.rating} stars`,
+              rating: feedback.rating
+            }));
+          
+          setTestimonials(displayTestimonials);
+        } else {
+          console.error('Failed to fetch testimonials', response.message);
+        }
+      } catch (error) {
+        console.error('Failed to fetch testimonials', error);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   // Animation effect to continuously move cards from right to left
   useEffect(() => {
@@ -67,14 +66,28 @@ const Testimonials = () => {
       animationFrame = requestAnimationFrame(animate);
     };
     
-    // Start the animation
-    animationFrame = requestAnimationFrame(animate);
-    
-    // Clean up
-    return () => {
-      cancelAnimationFrame(animationFrame);
-    };
-  }, [testimonials.length]);
+    // Only start animation if there are testimonials
+    if (testimonials.length > 0) {
+      animationFrame = requestAnimationFrame(animate);
+      
+      // Clean up
+      return () => {
+        cancelAnimationFrame(animationFrame);
+      };
+    }
+  }, [testimonials]);
+
+  // If no testimonials are available, return a placeholder
+  if (testimonials.length === 0) {
+    return (
+      <section className={styles.testimonialsSection}>
+        <h2 className={styles.sectionTitle}>Patient Testimonials</h2>
+        <div className={styles.noTestimonials}>
+          No testimonials available at the moment.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.testimonialsSection}>
