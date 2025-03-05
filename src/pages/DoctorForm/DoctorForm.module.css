@@ -1,0 +1,251 @@
+/* DoctorForm.css */
+.doctor-registration-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+  
+  .registration-card {
+    border-radius: 15px !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+  
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+  }
+  
+  .title-icon {
+    font-size: 28px;
+    color: #1890ff;
+  }
+  
+  .registration-steps {
+    margin: 12px 0 32px;
+    padding: 0 12px;
+  }
+  
+  .info-card {
+    background-color: #f9f9f9;
+    border-radius: 15px !important;
+    box-shadow: none;
+    height: 100%;
+    border: 1px solid #f0f0f0;
+    padding: 8px;
+  }
+  
+  .text-center {
+    text-align: center;
+  }
+  
+  .registration-form .ant-form-item-label {
+    font-weight: 500;
+    font-size: 15px;
+  }
+  
+  .days-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  
+  .day-checkbox {
+    background-color: #f5f5f5;
+    padding: 10px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+    border: 1px solid #f0f0f0;
+  }
+  
+  .day-checkbox:hover {
+    background-color: #e6f7ff;
+    border-color: #91d5ff;
+  }
+  
+  .ant-checkbox-wrapper-checked .day-checkbox {
+    background-color: #1890ff;
+    color: white;
+    border-color: #1890ff;
+  }
+  
+  .steps-action {
+    margin-top: 32px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+  
+  .error-message {
+    color: #ff4d4f;
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  
+  .prev-button, .next-button, .submit-button {
+    min-width: 120px;
+    height: 44px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  
+  .submit-button {
+    background-color: #52c41a;
+    border-color: #52c41a;
+  }
+  
+  .submit-button:hover {
+    background-color: #73d13d;
+    border-color: #73d13d;
+  }
+  
+  .pending-card {
+    max-width: 600px;
+    margin: 100px auto;
+    border-radius: 15px !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+  
+  .ant-input-prefix, .ant-select-suffix {
+    color: rgba(0, 0, 0, 0.45);
+    margin-right: 12px;
+  }
+  
+  /* Image upload styling - with requested changes */
+  .upload-form-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .avatar-uploader {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .avatar-uploader .ant-upload {
+    width: 240px ; /* Increased size */
+    height: 240px; /* Increased size */
+    margin: 0 auto;
+    background-color: #fafafa;
+    border: 1px dashed #d9d9d9;
+    border-radius: 0 !important; /* No curvature as requested */
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: none !important; /* No shadow as requested */
+  }
+  
+  .avatar-uploader .ant-upload:hover {
+    border-color: #1890ff;
+    background-color: #f0f8ff;
+  }
+  
+  .doctor-profile-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 15px;
+  }
+  .doctor-profile-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 8px;
+    text-align: center;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .doctor-profile-preview:hover .doctor-profile-overlay {
+    opacity: 1;
+  }
+  
+  .doctor-profile-hint {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .doctor-profile-container .ant-upload {
+    border-radius: 15px !important;
+    overflow: hidden;
+  }
+  
+  .days-card {
+    background-color: #f9f9f9;
+    border-radius: 15px !important;
+    box-shadow: none;
+    border: 1px solid #f0f0f0;
+  }
+
+  
+  /* Form field enhancements */
+  .ant-input, .ant-select-selector, .ant-input-number, .ant-checkbox-wrapper {
+    border-radius: 8px !important;
+  }
+  
+  .ant-input:hover, .ant-select-selector:hover, .ant-input-number:hover {
+    border-color: #40a9ff !important;
+  }
+  
+  .ant-input:focus, .ant-select-selector:focus, .ant-input-number:focus {
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+  }
+  
+  /* Section dividers */
+  .steps-content {
+    padding: 8px 4px;
+  }
+  
+  /* Additional organization */
+  .ant-form-item {
+    margin-bottom: 24px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .doctor-registration-container {
+      padding: 16px;
+    }
+    
+    .days-selection {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .registration-steps {
+      margin-bottom: 16px;
+    }
+  
+    .avatar-uploader .ant-upload {
+      width: 200px;
+      height: 200px;
+    }
+    
+    .prev-button, .next-button, .submit-button {
+      min-width: 100px;
+    }
+  }
+  
+  /* Improve fields focus state */
+  .ant-form-item-has-error .ant-input:focus,
+  .ant-form-item-has-error .ant-input-affix-wrapper:focus,
+  .ant-form-item-has-error .ant-input-number:focus {
+    box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+  }
