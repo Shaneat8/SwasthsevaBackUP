@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Button, Select, DatePicker, message, Card, Divider } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { GetAllDoctors } from "../../apicalls/doctors";
 import { GetAllUsers } from "../../apicalls/users";
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import firestoredb from '../../firebaseConfig';
 import { getMedicineList } from '../../apicalls/medicine';
-import { generateExcelReport, downloadExcelFile } from '../../apicalls/reportGenerator';
 import { getAllFeedback } from "../../apicalls/feedback";
-
+import { generateExcelReport, downloadExcelFile, generatePDFReport, downloadPDFFile } from '../../apicalls/reportGenerator'; 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -17,7 +16,7 @@ const Reports = () => {
   const [dateRange, setDateRange] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const downloadReport = async () => {
+  const generateReport = async (format = 'excel') => {
     try {
       setLoading(true);
       let data = [];
@@ -222,53 +221,26 @@ const Reports = () => {
           data = ticketsSnapshot.docs.map(doc => {
             const ticketData = doc.data();
             
-            // Safely handle date conversions
-            let createdAtDate = new Date();
-            let lastUpdatedDate = new Date();
-            
-            try {
-              if (ticketData.createdAt instanceof Timestamp) {
-                createdAtDate = ticketData.createdAt.toDate();
-              } else if (ticketData.createdAt && typeof ticketData.createdAt.toDate === 'function') {
-                createdAtDate = ticketData.createdAt.toDate();
-              } else if (ticketData.createdAt && ticketData.createdAt._seconds) {
-                createdAtDate = new Date(ticketData.createdAt._seconds * 1000);
-              } else if (ticketData.createdAt && ticketData.createdAt.seconds) {
-                createdAtDate = new Date(ticketData.createdAt.seconds * 1000);
-              } else if (ticketData.createdAt) {
-                createdAtDate = new Date(ticketData.createdAt);
-              }
-              
-              if (ticketData.lastUpdated instanceof Timestamp) {
-                lastUpdatedDate = ticketData.lastUpdated.toDate();
-              } else if (ticketData.lastUpdated && typeof ticketData.lastUpdated.toDate === 'function') {
-                lastUpdatedDate = ticketData.lastUpdated.toDate();
-              } else if (ticketData.lastUpdated && ticketData.lastUpdated._seconds) {
-                lastUpdatedDate = new Date(ticketData.lastUpdated._seconds * 1000);
-              } else if (ticketData.lastUpdated && ticketData.lastUpdated.seconds) {
-                lastUpdatedDate = new Date(ticketData.lastUpdated.seconds * 1000);
-              } else if (ticketData.lastUpdated) {
-                lastUpdatedDate = new Date(ticketData.lastUpdated);
-              }
-            } catch (error) {
-              console.error(`Error formatting dates for ticket ${doc.id}:`, error);
-            }
-            
             return {
-              // Fields for Excel report
               ID: doc.id || '',
-              "Ticket ID": ticketData.ticketId || doc.id || '',  // Use doc.id as fallback
+              "Ticket ID": ticketData.ticketId || doc.id || '',
               "Title": ticketData.title || ticketData.subject || '',
               "Description": ticketData.description || '',
               "Status": ticketData.status || '',
-              "Priority": ticketData.priority || 'Normal',  // Provide default value
-              "Created At": createdAtDate.toLocaleDateString('en-GB'),  // Format date as DD-MM-YYYY
-              "Last Updated": lastUpdatedDate.toLocaleDateString('en-GB'),
+              "Priority": ticketData.priority || 'Normal',
+              "Created At": ticketData.createdAt ? 
+                (ticketData.createdAt.toDate ? 
+                  ticketData.createdAt.toDate().toLocaleDateString('en-GB') : 
+                  new Date(ticketData.createdAt).toLocaleDateString('en-GB')
+                ) : '',
+              "Last Updated": ticketData.lastUpdated ? 
+                (ticketData.lastUpdated.toDate ? 
+                  ticketData.lastUpdated.toDate().toLocaleDateString('en-GB') : 
+                  new Date(ticketData.lastUpdated).toLocaleDateString('en-GB')
+                ) : '',
               "User ID": ticketData.userId || ticketData.email || '',
               "Query Type": ticketData.queryType || '',
-              "Is Resolved": ticketData.isResolved ? 'Yes' : 'No',
-              "Admin Response": ticketData.adminResponse || '',
-              "User Response": ticketData.userResponse || ''
+              "Is Resolved": ticketData.isResolved ? 'Yes' : 'No'
             };
           });
           break;
@@ -276,44 +248,17 @@ const Reports = () => {
         case 'feedback':
           const feedbackResponse = await getAllFeedback();
           if (feedbackResponse.success) {
-            data = feedbackResponse.data.map(feedback => {
-              // Process date if needed
-              let createdDate = new Date();
-              try {
-                if (typeof feedback.createdAt === 'string') {
-                  // Handle DD-MM-YY HH:mm format
-                  if (feedback.createdAt.match(/^\d{2}-\d{2}-\d{2}\s\d{2}:\d{2}$/)) {
-                    const [datePart, timePart] = feedback.createdAt.split(' ');
-                    const [day, month, year] = datePart.split('-');
-                    const [hours, minutes] = timePart.split(':');
-                    createdDate = new Date(`20${year}-${month}-${day}T${hours}:${minutes}:00`);
-                  } else {
-                    createdDate = new Date(feedback.createdAt);
-                  }
-                } else if (feedback.createdAt instanceof Timestamp) {
-                  createdDate = feedback.createdAt.toDate();
-                } else if (feedback.createdAt && typeof feedback.createdAt.toDate === 'function') {
-                  createdDate = feedback.createdAt.toDate();
-                } else if (feedback.createdAt && feedback.createdAt._seconds) {
-                  createdDate = new Date(feedback.createdAt._seconds * 1000);
-                } else if (feedback.createdAt && feedback.createdAt.seconds) {
-                  createdDate = new Date(feedback.createdAt.seconds * 1000);
-                } else if (feedback.createdAt) {
-                  createdDate = new Date(feedback.createdAt);
-                }
-              } catch (error) {
-                console.error(`Error formatting date for feedback:`, error);
-              }
-              
-              return {
-                "ID": feedback.id || '',
-                "User ID": feedback.userId || '',
-                "Rating": feedback.rating || 0,
-                "Comment": feedback.comment || '',
-                "Date": createdDate.toLocaleDateString('en-GB'),
-                "Time": createdDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-              };
-            });
+            data = feedbackResponse.data.map(feedback => ({
+              "ID": feedback.id || '',
+              "User ID": feedback.userId || '',
+              "Rating": feedback.rating || 0,
+              "Comment": feedback.comment || '',
+              "Date": feedback.createdAt ? 
+                (feedback.createdAt.toDate ? 
+                  feedback.createdAt.toDate().toLocaleDateString('en-GB') : 
+                  new Date(feedback.createdAt).toLocaleDateString('en-GB')
+                ) : ''
+            }));
           } else {
             throw new Error("Failed to fetch feedback data");
           }
@@ -322,11 +267,17 @@ const Reports = () => {
         default:
           throw new Error("Invalid report type");
       }
-      
-      // Generate and download Excel file
-      const buffer = await generateExcelReport(data, reportType);
-      downloadExcelFile(buffer, `${reportType}_report_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
+
+      const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+      const filename = `Swasthya_Seva_${reportType.charAt(0).toUpperCase() + reportType.slice(1)}_Report_${currentDate}`;
+
+      if (format === 'excel') {
+        const buffer = await generateExcelReport(data, reportType);
+        downloadExcelFile(buffer, `${filename}.xlsx`);
+      } else if (format === 'pdf') {
+        const doc = generatePDFReport(data, reportType);
+        downloadPDFFile(doc, `${filename}.pdf`);
+      } 
       message.success(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report downloaded successfully`);
     } catch (error) {
       console.error('Error generating report:', error);
@@ -335,7 +286,7 @@ const Reports = () => {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-2xl font-bold mb-6">Generate Reports</h2>
@@ -371,15 +322,24 @@ const Reports = () => {
         
         <Divider />
         
-        <div className="flex justify-end">
+        <div className="flex justify-end space-x-4">
           <Button 
             type="primary"
             icon={<DownloadOutlined />}
             loading={loading}
-            onClick={downloadReport}
-            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => generateReport('excel')}
+            className="bg-green-500 hover:bg-green-600"
           >
             Generate Excel Report
+          </Button>
+          <Button 
+            type="primary"
+            icon={<FilePdfOutlined />}
+            loading={loading}
+            onClick={() => generateReport('pdf')}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            Generate PDF Report
           </Button>
         </div>
       </Card>
@@ -393,7 +353,7 @@ const Reports = () => {
           <strong>Doctors Report:</strong> Includes all doctor information (name, specialty, status).
         </p>
         <p className="mb-1">
-          <strong>Medicines Report:</strong> Includes medicine details (ID, name, description, price, stock, expiry date).
+          <strong>Medicines Report:</strong> Includes medicine details (ID, name, stock, expiry date).
         </p>
         <p className="mb-1">
           <strong>Complaints Report:</strong> Includes all tickets with ID, title, description, status, priority, and dates.

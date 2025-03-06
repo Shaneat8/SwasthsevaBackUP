@@ -11,9 +11,14 @@ import {
 import firestoredb from "../firebaseConfig";
 
 // Fetch user's records
-export const fetchUserRecords = async (userId) => {
+// Memoize fetchUserRecords to prevent unnecessary calls
+export const fetchUserRecords = async (userId, forceRefresh = false) => {
   try {
-    console.log("Fetching User Records", new Date().toISOString());
+    // Only log if it's a forced refresh
+    if (forceRefresh) {
+      console.log("Fetching User Records", new Date().toISOString());
+    }
+    
     const userRecordsRef = collection(
       firestoredb,
       `patient-records/${userId}/user_records`
@@ -22,42 +27,37 @@ export const fetchUserRecords = async (userId) => {
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      // If uploadedBy is not specified, assume it's from a doctor
       uploadedBy: doc.data().uploadedBy || "doctor",
     }));
   } catch (error) {
-    throw new Error("Error fetching patientrecords: " + error.message);
+    console.error("Error fetching patient records:", error);
+    throw new Error("Error fetching patient records: " + error.message);
   }
 };
 
 // Fetch user's lab records
-export const fetchLabRecords = async (userId) => {
+export const fetchLabRecords = async (userId, forceRefresh = false) => {
   try {
-    console.log("Fetching Lab Records", new Date().toISOString());
+    // Only log if it's a forced refresh
+    if (forceRefresh) {
+      console.log("Fetching Lab Records", new Date().toISOString());
+    }
+    
     const labRecordsRef = collection(
       firestoredb,
       `patient-records/${userId}/lab-reports`
     );
     const querySnapshot = await getDocs(labRecordsRef);
 
-    // Map the lab records and normalize field names for consistency with user records
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
 
-      // Create a normalized record structure
       return {
         id: doc.id,
-        // If reportUrl exists, use it; otherwise fallback to url
         url: data.reportUrl ? data.reportUrl.trim() : data.url,
-        // If no name exists, create one based on testId
-        name:
-          data.name ||
-          (data.testId ? `Lab_Report_${data.testId}.pdf` : "Lab Report.pdf"),
-        // Map public_id and preserve original fields
+        name: data.name || (data.testId ? `Lab_Report_${data.testId}.pdf` : "Lab Report.pdf"),
         public_id: data.reportPublicId || data.public_id,
-        // Add uploadedBy field with default value if not present
         uploadedBy: data.uploadedBy || "doctor",
-        // Preserve original fields as well
         createdAt: data.createdAt,
         testId: data.testId,
         status: data.status,
@@ -67,14 +67,19 @@ export const fetchLabRecords = async (userId) => {
       };
     });
   } catch (error) {
+    console.error("Error fetching patient Lab records:", error);
     throw new Error("Error fetching patient Lab records: " + error.message);
   }
 };
 
 // Fetch patient-uploaded records
-export const fetchPatientUploadedRecords = async (userId) => {
+export const fetchPatientUploadedRecords = async (userId, forceRefresh = false) => {
   try {
-    console.log("Fetching Patient Uploaded Records", new Date().toISOString());
+    // Only log if it's a forced refresh
+    if (forceRefresh) {
+      console.log("Fetching Patient Uploaded Records", new Date().toISOString());
+    }
+    
     const recordsRef = collection(firestoredb, "patientUploads");
     const q = query(recordsRef, where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
@@ -82,13 +87,11 @@ export const fetchPatientUploadedRecords = async (userId) => {
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      // Always set uploadedBy to 'user' for patient uploads
       uploadedBy: "user",
     }));
   } catch (error) {
-    throw new Error(
-      "Error fetching patient uploaded records: " + error.message
-    );
+    console.error("Error fetching patient uploaded records:", error);
+    throw new Error("Error fetching patient uploaded records: " + error.message);
   }
 };
 

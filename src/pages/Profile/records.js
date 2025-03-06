@@ -205,16 +205,22 @@ const Records = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-records");
-  const [activeRecordsSubTab, setActiveRecordsSubTab] =
-    useState("doctor-prescribed");
-  // Get user once from localStorage
+  const [activeRecordsSubTab, setActiveRecordsSubTab] = useState("doctor-prescribed");
+
+  // Memoize user to prevent unnecessary re-renders
   const user = useMemo(() => {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   }, []);
 
+  const recordsFetched = React.useRef(false);
+
   // Function to fetch records with useCallback
   const fetchRecords = useCallback(async (userId) => {
+    // Prevent multiple simultaneous fetches
+    if (recordsFetched.current) return;
+    recordsFetched.current = true;
+
     if (!userId) {
       message.error("Please log in to view your records");
       setLoading(false);
@@ -228,9 +234,9 @@ const Records = () => {
         await Promise.all([
           CheckProfileCompletion(userId),
           GetUserById(userId),
-          fetchUserRecords(userId),
-          fetchPatientUploadedRecords(userId),
-          fetchLabRecords(userId),
+          fetchUserRecords(userId, true),
+          fetchPatientUploadedRecords(userId, true),
+          fetchLabRecords(userId, true),
         ]);
 
       if (!profileResponse.success) {
@@ -239,52 +245,40 @@ const Records = () => {
         return null;
       }
 
-      // Deep comparison utility
-      const isDeepEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
-      // Process records with memoization
+      // Simplified record processing
       const processRecords = (records, uploadSource) =>
-        records
-          .map((record) => ({
-            ...record,
-            uploadedBy: uploadSource,
-          }))
-          .filter(Boolean);
+        records.map((record) => ({
+          ...record,
+          uploadedBy: uploadSource,
+        }));
 
-      const doctorRecords = processRecords(prescribed, "doctor");
-      const patientUploads = processRecords(uploaded, "user");
-      const labRecords = processRecords(lab, "doctor");
+      // Atomic state updates with a simple comparison
+      setUserProfile(userResponse.data);
+      setDoctorPrescribedRecords(processRecords(prescribed, "doctor"));
+      setPatientUploadedRecords(processRecords(uploaded, "user"));
+      setLabRecords(processRecords(lab, "doctor"));
 
-      // Atomic state updates with deep comparison
-      setUserProfile((prevProfile) =>
-        !isDeepEqual(prevProfile, userResponse.data)
-          ? userResponse.data
-          : prevProfile
-      );
-
-      setDoctorPrescribedRecords((prev) =>
-        !isDeepEqual(prev, doctorRecords) ? doctorRecords : prev
-      );
-
-      setPatientUploadedRecords((prev) =>
-        !isDeepEqual(prev, patientUploads) ? patientUploads : prev
-      );
-
-      setLabRecords((prev) =>
-        !isDeepEqual(prev, labRecords) ? labRecords : prev
-      );
-
-      return () => {
-        // Optional cleanup function if needed
-      };
     } catch (error) {
       message.error("Error loading user data");
       console.error("Initialization error:", error);
-      return null;
     } finally {
       setLoading(false);
+      recordsFetched.current = false;
     }
   }, []);
+
+  // Simplified useEffect with proper dependency management
+  useEffect(() => {
+    // Only fetch if user ID exists and records haven't been fetched
+    if (user?.id && !recordsFetched.current) {
+      fetchRecords(user.id);
+    }
+
+    // Cleanup function 
+    return () => {
+      recordsFetched.current = false;
+    };
+  }, [user?.id, fetchRecords]);
 
   // Simplified useEffect with proper dependency management
   useEffect(() => {

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Button, Card, Tag } from "antd";
-import Appointments from "./Appointments";
-import Doctor from "../DoctorForm";
-import UserForm from "./UserForm";
 import { useLocation, useNavigate } from "react-router-dom";
-import Records from "./records";
-import TicketForm from "../Ticket/TicketForm";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import firestoredb from "../../firebaseConfig";
-import BookTest from "../BookTest/BookTest";
+
+// Import components lazily to improve initial load time
+const Appointments = React.lazy(() => import("./Appointments"));
+const Doctor = React.lazy(() => import("../DoctorForm"));
+const UserForm = React.lazy(() => import("./UserForm"));
+const Records = React.lazy(() => import("./records"));
+const TicketForm = React.lazy(() => import("../Ticket/TicketForm"));
+const BookTest = React.lazy(() => import("../BookTest/BookTest"));
 
 function Profile() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -18,28 +18,71 @@ function Profile() {
   const navigate = useNavigate();
 
   const [tickets, setTickets] = useState([]);
+  const [ticketsLoaded, setTicketsLoaded] = useState(false);
+  const unsubscribeRef = useRef(null);
 
-  useEffect(() => {
-    if (user) {
-      const q = query(
-        collection(firestoredb, 'tickets'),
-        where('email', '==', user.email)
-      );
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const ticketList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setTickets(ticketList);
+  // Lazy load tickets data only when the tickets tab is active
+  const loadTicketsData = useCallback(() => {
+    if (!ticketsLoaded && user) {
+      import("firebase/firestore").then(({ collection, onSnapshot, query, where }) => {
+        import("../../firebaseConfig").then((module) => {
+          const firestoredb = module.default;
+          
+          const q = query(
+            collection(firestoredb, 'tickets'),
+            where('email', '==', user.email)
+          );
+          
+          // Store the unsubscribe function in the ref for cleanup
+          unsubscribeRef.current = onSnapshot(q, (querySnapshot) => {
+            const ticketList = querySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setTickets(ticketList);
+            setTicketsLoaded(true);
+          });
+        });
       });
-
-      return () => unsubscribe();
     }
-  }, [user]);
+  }, [user, ticketsLoaded]);
+
+  // Call loadTicketsData only when the tickets tab is active
+  React.useEffect(() => {
+    if (tab === "tickets") {
+      loadTicketsData();
+    }
+    
+    // Cleanup function for when component unmounts or tab changes
+    return () => {
+      if (unsubscribeRef.current && tab !== "tickets") {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, [tab, loadTicketsData]);
+
+  // Cleanup on component unmount
+  React.useEffect(() => {
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, []);
 
   // Render content based on the current tab
   const renderContent = () => {
+    // Use React.Suspense to handle the lazy loaded components
+    return (
+      <React.Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+        {getTabContent()}
+      </React.Suspense>
+    );
+  };
+
+  const getTabContent = () => {
     switch(tab) {
       case "appointments":
         return (
