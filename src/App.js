@@ -21,6 +21,7 @@ import Feedback from "./pages/Feedback";
 import AboutUS from "./pages/AboutUs";
 import Appointments from "./pages/Profile/Appointments";
 import DoctorList from "./pages/BookAppointment/DoctorList";
+import RescheduleLeaveHandler from "./pages/DoctorForm/RescheduleLeave";
 
 function App() {
   const {loading}=useSelector((state)=>state.loader);
@@ -43,6 +44,7 @@ function App() {
           <Route path="/appointment/:appointmentId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>                   
           <Route path="/appointment" element={<ProtectedRoute><Appointments/></ProtectedRoute>}/>                   
           <Route path="/reschedule/:id/:response" element={<RescheduleResponse />} />
+          <Route path="/reschedule-leave/:appointmentId/:action" element={<RescheduleLeaveHandler />} />
           <Route path="/patient-records/:patientId" element={<PatientRecordsPage />} />
 
           <Route path="/track-ticket/:ticketId" element={<ProtectedRoute><TicketTracking/></ProtectedRoute>} />
@@ -61,5 +63,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;

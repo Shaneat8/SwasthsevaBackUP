@@ -1,4 +1,4 @@
-import { Button, Input, message, Card, Tag, Typography, Divider } from "antd";
+import { Button, Input, message, Card, Tag, Typography, Divider, Alert } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -17,11 +17,13 @@ import {
   ArrowLeftOutlined,
   UserOutlined,
   InfoCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  WarningOutlined
 } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { CheckProfileCompletion } from "../../apicalls/users";
 import { motion } from "framer-motion";
+
 import './bookdoctor.css';
 
 const { Title, Text } = Typography;
@@ -33,9 +35,12 @@ function BookAppointment() {
   const [doctor, setDoctor] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [bookedSlots, setBookedSlots] = useState([]);
+  const [isLeaveDay, setIsLeaveDay] = useState(false);
+  const [leaveReason, setLeaveReason] = useState("");
   const nav = useNavigate();
   const { id } = useParams();
   const dispatch = useDispatch();
+  
   
   // Handle back button click
   const handleBack = () => {
@@ -91,6 +96,21 @@ function BookAppointment() {
   }, [dispatch, id]);
 
   const getSlotsData = () => {
+    // If the doctor is on leave, display a clear message
+    if (isLeaveDay) {
+      return (
+        <div className="leave-notification">
+          <Alert
+            message="Doctor Unavailable"
+            description={`Dr. ${doctor.firstName} ${doctor.lastName} is on leave on ${moment(date).format("dddd, MMMM Do YYYY")}. Reason: ${leaveReason}`}
+            type="warning"
+            showIcon
+            icon={<WarningOutlined />}
+          />
+        </div>
+      );
+    }
+    
     const day = moment(date).format("dddd");
     if (!doctor.days.includes(day)) {
       return (
@@ -160,6 +180,12 @@ function BookAppointment() {
     
     setError("");
 
+    // Double-check if the doctor is on leave before processing
+    if (isLeaveDay) {
+      message.error(`Cannot book appointment. Dr. ${doctor.firstName} ${doctor.lastName} is on leave on ${date}. Reason: ${leaveReason}`);
+      return;
+    }
+
     try {
       dispatch(ShowLoader(true));
 
@@ -198,6 +224,12 @@ function BookAppointment() {
             message.error(profileCheck.message);
           }
       } else {
+        // Handle leave-specific error message
+        if (response.isOnLeave) {
+          setIsLeaveDay(true);
+          setLeaveReason(response.leaveReason);
+          setSelectedSlot("");
+        }
         message.error(response.message);
       }
     } catch (error) {
@@ -213,6 +245,16 @@ function BookAppointment() {
       dispatch(ShowLoader(false));
       if (response.success) {
         setBookedSlots(response.data);
+        
+        // Check if the doctor is on leave based on the response
+        if (response.isOnLeave) {
+          setIsLeaveDay(true);
+          setLeaveReason(response.leaveReason);
+          setSelectedSlot(""); // Clear any selected slot
+        } else {
+          setIsLeaveDay(false);
+          setLeaveReason("");
+        }
       } else {
         message.error(response.message);
       }
@@ -356,7 +398,7 @@ function BookAppointment() {
               </motion.div>
             )}
 
-            {selectedSlot && (
+            {selectedSlot && !isLeaveDay && (
               <motion.div 
                 className="medical-problem-container"
                 initial={{ opacity: 0, y: 20 }}

@@ -1,39 +1,45 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { 
-  Button, 
-  Col, 
-  Form, 
-  Input, 
-  message, 
-  Row, 
-  Select, 
-  Typography, 
-  Card, 
-  Divider, 
-  Steps, 
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  message,
+  Row,
+  Select,
+  Typography,
+  Card,
+  Divider,
+  Steps,
   Checkbox,
   Alert,
   Upload,
-  Image
+  Image,
 } from "antd";
 import ImgCrop from "antd-img-crop";
-import { 
-  UserOutlined, 
-  PhoneOutlined, 
-  MailOutlined, 
-  IdcardOutlined, 
+import {
+  UserOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  IdcardOutlined,
   MedicineBoxOutlined,
   ClockCircleOutlined,
   TrophyOutlined,
   BookOutlined,
   PlusOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
-import { AddDoctor, CheckIfDoctorApplied, UpdateDoctor } from "../../apicalls/doctors";
+import {
+  AddDoctor,
+  CheckIfDoctorApplied,
+  UpdateDoctor,
+} from "../../apicalls/doctors";
 import { useNavigate } from "react-router-dom";
 import "./DoctorForm.module.css";
+import DoctorLeaveModal from "./DoctorLeaveModal";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -44,15 +50,17 @@ function Doctor() {
   const [days, setDays] = useState([]);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [fileList, setFileList] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState('');
+  const [previewImage, setPreviewImage] = useState("");
   const [loading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({});
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState("");
+  // Then, add these state variables in your Doctor component
+  const [leaveModalVisible, setLeaveModalVisible] = useState(false);
 
   const specialistOptions = [
     { value: "Dermatologist", label: "Dermatologist" },
@@ -62,7 +70,7 @@ function Doctor() {
     { value: "Orthopedics", label: "Orthopedics" },
     { value: "Neurologist", label: "Neurologist" },
     { value: "Urologist", label: "Urologist" },
-    { value: "Gynecologist", label: "Gynecologist" }
+    { value: "Gynecologist", label: "Gynecologist" },
   ];
 
   const qualificationOptions = [
@@ -75,9 +83,8 @@ function Doctor() {
     { value: "DM", label: "DM" },
     { value: "MCh", label: "MCh" },
     { value: "DGO", label: "DGO" },
-    { value: "DNB", label: "DNB" }
+    { value: "DNB", label: "DNB" },
   ];
-
   const daysOfWeek = [
     "Monday",
     "Tuesday",
@@ -85,10 +92,10 @@ function Doctor() {
     "Thursday",
     "Friday",
     "Saturday",
-    "Sunday"
+    "Sunday",
   ];
 
-  const getBase64 = (file) => 
+  const getBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -97,15 +104,15 @@ function Doctor() {
     });
 
   const beforeUpload = (file) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
     const isValidFormat = validTypes.includes(file.type);
     if (!isValidFormat) {
-      message.error('You can only upload JPG/PNG/WEBP files!');
+      message.error("You can only upload JPG/PNG/WEBP files!");
       return false;
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('Image must be smaller than 2MB!');
+      message.error("Image must be smaller than 2MB!");
       return false;
     }
     return isValidFormat && isLt2M;
@@ -124,7 +131,7 @@ function Doctor() {
     // Update imageUrl for the form submission if there is at least one file
     if (newFileList.length > 0 && newFileList[0]?.originFileObj) {
       // Use getBase64 to convert file to base64 string
-      getBase64(newFileList[0].originFileObj).then(base64 => {
+      getBase64(newFileList[0].originFileObj).then((base64) => {
         setImageUrl(base64);
       });
     } else if (newFileList.length > 0 && newFileList[0]?.thumbUrl) {
@@ -132,7 +139,7 @@ function Doctor() {
     } else if (newFileList.length > 0 && newFileList[0]?.url) {
       setImageUrl(newFileList[0].url);
     } else {
-      setImageUrl('');
+      setImageUrl("");
     }
   };
 
@@ -144,20 +151,33 @@ function Doctor() {
 
   const nextStep = () => {
     const fieldsToValidate = [];
-    
+
     // Determine which fields to validate based on current step
     if (currentStep === 0) {
-      fieldsToValidate.push('firstName', 'lastName', 'email', 'phone', 'reg_id', 'address');
+      fieldsToValidate.push(
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "reg_id",
+        "address"
+      );
     } else if (currentStep === 1) {
-      fieldsToValidate.push('Specialist', 'experience', 'Qualification', 'summary');
+      fieldsToValidate.push(
+        "Specialist",
+        "experience",
+        "Qualification",
+        "summary"
+      );
     }
-    
-    form.validateFields(fieldsToValidate)
+
+    form
+      .validateFields(fieldsToValidate)
       .then((values) => {
         // Save the current step's data
-        setFormData(prevData => ({
+        setFormData((prevData) => ({
           ...prevData,
-          ...values
+          ...values,
         }));
         setCurrentStep(currentStep + 1);
       })
@@ -171,36 +191,46 @@ function Doctor() {
     setCurrentStep(currentStep - 1);
   };
 
+  // Add this function to handle opening the leave modal
+  const showLeaveModal = () => {
+    setLeaveModalVisible(true);
+  };
+
+  // Add this function to handle closing the leave modal
+  const handleLeaveModalCancel = () => {
+    setLeaveModalVisible(false);
+  };
+
   const onFinish = async (values) => {
     if (days.length === 0) {
-      setError('At least one day must be selected.');
+      setError("At least one day must be selected.");
       return;
     }
-    setError('');
-    
+    setError("");
+
     try {
       dispatch(ShowLoader(true));
-      
+
       // Explicitly combine all data from all steps
       const completeFormData = {
-        ...formData,  // This contains data from previous steps
-        ...values,    // This contains data from the current step
+        ...formData, // This contains data from previous steps
+        ...values, // This contains data from the current step
         days,
         photoUrl: imageUrl,
         userId: JSON.parse(localStorage.getItem("user"))?.id,
         status: "pending",
         role: "doctor",
       };
-      
+
       // Convert any undefined values to empty strings
-      Object.keys(completeFormData).forEach(key => {
+      Object.keys(completeFormData).forEach((key) => {
         if (completeFormData[key] === undefined) {
-          completeFormData[key] = '';
+          completeFormData[key] = "";
         }
       });
-      
+
       console.log("Submitting complete form data:", completeFormData);
-      
+
       let response = null;
       if (alreadyApproved) {
         completeFormData.id = JSON.parse(localStorage.getItem("user"))?.id;
@@ -209,7 +239,7 @@ function Doctor() {
       } else {
         response = await AddDoctor(completeFormData);
       }
-      
+
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
@@ -224,7 +254,7 @@ function Doctor() {
   };
   const handleDayChange = (day) => {
     if (days.includes(day)) {
-      setDays(days.filter(d => d !== day));
+      setDays(days.filter((d) => d !== day));
     } else {
       setDays([...days, day]);
     }
@@ -237,7 +267,7 @@ function Doctor() {
       if (!userId) {
         throw new Error("User not found");
       }
-      
+
       const response = await CheckIfDoctorApplied(userId);
       if (response.success) {
         setAlreadyApplied(true);
@@ -246,16 +276,18 @@ function Doctor() {
           form.setFieldsValue(response.data);
           setFormData(response.data);
           setDays(response.data.days || []);
-          
+
           // Set image data if exists
           if (response.data.photoUrl) {
             setImageUrl(response.data.photoUrl);
-            setFileList([{
-              uid: '-1',
-              name: 'profile-image.jpg',
-              status: 'done',
-              url: response.data.photoUrl,
-            }]);
+            setFileList([
+              {
+                uid: "-1",
+                name: "profile-image.jpg",
+                status: "done",
+                url: response.data.photoUrl,
+              },
+            ]);
           }
         }
       }
@@ -267,14 +299,14 @@ function Doctor() {
   }, [dispatch, form]);
 
   useEffect(() => {
-    const user=JSON.parse(localStorage.getItem('user'));
-     if(user.role==="guest"){
-            message.error("Please register before accessing");
-            navigate('/');
-            return;
-          }
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user.role === "guest") {
+      message.error("Please register before accessing");
+      navigate("/");
+      return;
+    }
     CheckAlreadyApplied();
-  }, [CheckAlreadyApplied,navigate]);
+  }, [CheckAlreadyApplied, navigate]);
 
   const uploadButton = (
     <div>
@@ -285,7 +317,7 @@ function Doctor() {
 
   const steps = [
     {
-      title: 'Personal Information',
+      title: "Personal Information",
       content: (
         <Row gutter={[24, 24]} align="top">
           {/* First column with personal details */}
@@ -296,9 +328,14 @@ function Doctor() {
                   <Form.Item
                     label="First Name"
                     name="firstName"
-                    rules={[{ required: true, message: "First name is required" }]}
+                    rules={[
+                      { required: true, message: "First name is required" },
+                    ]}
                   >
-                    <Input prefix={<UserOutlined />} placeholder="Enter your first name" />
+                    <Input
+                      prefix={<UserOutlined />}
+                      placeholder="Enter your first name"
+                    />
                   </Form.Item>
                 </Col>
 
@@ -306,9 +343,14 @@ function Doctor() {
                   <Form.Item
                     label="Last Name"
                     name="lastName"
-                    rules={[{ required: true, message: "Last name is required" }]}
+                    rules={[
+                      { required: true, message: "Last name is required" },
+                    ]}
                   >
-                    <Input prefix={<UserOutlined />} placeholder="Enter your last name" />
+                    <Input
+                      prefix={<UserOutlined />}
+                      placeholder="Enter your last name"
+                    />
                   </Form.Item>
                 </Col>
 
@@ -318,10 +360,13 @@ function Doctor() {
                     name="email"
                     rules={[
                       { required: true, message: "Email is required" },
-                      { type: "email", message: "Please enter a valid email" }
+                      { type: "email", message: "Please enter a valid email" },
                     ]}
                   >
-                    <Input prefix={<MailOutlined />} placeholder="Enter your email" />
+                    <Input
+                      prefix={<MailOutlined />}
+                      placeholder="Enter your email"
+                    />
                   </Form.Item>
                 </Col>
 
@@ -331,10 +376,17 @@ function Doctor() {
                     name="phone"
                     rules={[
                       { required: true, message: "Phone number is required" },
-                      { pattern: /^[0-9]{10}$/, message: "Enter a valid 10-digit phone number" }
+                      {
+                        pattern: /^[0-9]{10}$/,
+                        message: "Enter a valid 10-digit phone number",
+                      },
                     ]}
                   >
-                    <Input prefix={<PhoneOutlined />} placeholder="Enter your phone number" maxLength={10} />
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder="Enter your phone number"
+                      maxLength={10}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -375,11 +427,21 @@ function Doctor() {
                     label="Registration ID"
                     name="reg_id"
                     rules={[
-                      { required: true, message: "Registration ID is required" },
-                      { pattern: /^[0-9]{5}$/, message: "Enter a valid 5-digit registration ID" }
+                      {
+                        required: true,
+                        message: "Registration ID is required",
+                      },
+                      {
+                        pattern: /^[0-9]{5}$/,
+                        message: "Enter a valid 5-digit registration ID",
+                      },
                     ]}
                   >
-                    <Input prefix={<IdcardOutlined />} placeholder="Enter your registration ID" maxLength={5} />
+                    <Input
+                      prefix={<IdcardOutlined />}
+                      placeholder="Enter your registration ID"
+                      maxLength={5}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -405,7 +467,7 @@ function Doctor() {
       ),
     },
     {
-      title: 'Professional Information',
+      title: "Professional Information",
       content: (
         <Row gutter={[24, 24]}>
           <Col span={24}>
@@ -415,7 +477,9 @@ function Doctor() {
                   <Form.Item
                     label="Specialization"
                     name="Specialist"
-                    rules={[{ required: true, message: "Specialization is required" }]}
+                    rules={[
+                      { required: true, message: "Specialization is required" },
+                    ]}
                   >
                     <Select
                       placeholder="Select your specialization"
@@ -429,7 +493,9 @@ function Doctor() {
                   <Form.Item
                     label="Experience (Years)"
                     name="experience"
-                    rules={[{ required: true, message: "Experience is required" }]}
+                    rules={[
+                      { required: true, message: "Experience is required" },
+                    ]}
                   >
                     <Input
                       type="number"
@@ -444,7 +510,9 @@ function Doctor() {
                   <Form.Item
                     label="Qualification"
                     name="Qualification"
-                    rules={[{ required: true, message: "Qualification is required" }]}
+                    rules={[
+                      { required: true, message: "Qualification is required" },
+                    ]}
                   >
                     <Select
                       placeholder="Select your highest qualification"
@@ -455,10 +523,7 @@ function Doctor() {
                 </Col>
 
                 <Col span={24}>
-                  <Form.Item
-                    label="Professional Summary"
-                    name="summary"
-                  >
+                  <Form.Item label="Professional Summary" name="summary">
                     <TextArea
                       placeholder="Briefly describe your professional background, expertise, and approach to patient care"
                       autoSize={{ minRows: 3, maxRows: 5 }}
@@ -472,7 +537,7 @@ function Doctor() {
       ),
     },
     {
-      title: 'Work Hours',
+      title: "Work Hours",
       content: (
         <Row gutter={[24, 24]}>
           <Col span={24}>
@@ -482,7 +547,9 @@ function Doctor() {
                   <Form.Item
                     label="Start Time"
                     name="startTime"
-                    rules={[{ required: true, message: "Start time is required" }]}
+                    rules={[
+                      { required: true, message: "Start time is required" },
+                    ]}
                   >
                     <Input
                       type="time"
@@ -496,7 +563,9 @@ function Doctor() {
                   <Form.Item
                     label="End Time"
                     name="endTime"
-                    rules={[{ required: true, message: "End time is required" }]}
+                    rules={[
+                      { required: true, message: "End time is required" },
+                    ]}
                   >
                     <Input
                       type="time"
@@ -527,10 +596,7 @@ function Doctor() {
 
           <Col span={24}>
             <Card className="days-card" bordered={false}>
-              <Form.Item
-                label="Working Days"
-                required
-              >
+              <Form.Item label="Working Days" required>
                 <div className="days-selection">
                   {daysOfWeek.map((day) => (
                     <Checkbox
@@ -554,28 +620,28 @@ function Doctor() {
 
   return (
     <div className="doctor-registration-container">
-      {(!alreadyApplied || alreadyApproved) ? (
-        <Card 
+      {!alreadyApplied || alreadyApproved ? (
+        <Card
           className="registration-card"
           title={
             <div className="card-title">
               <MedicineBoxOutlined className="title-icon" />
               <Title level={4}>
-                {alreadyApproved 
-                  ? "Update Your Doctor Profile" 
+                {alreadyApproved
+                  ? "Update Your Doctor Profile"
                   : "Doctor Registration Application"}
               </Title>
             </div>
           }
         >
-          <Steps 
-            current={currentStep} 
+          <Steps
+            current={currentStep}
             className="registration-steps"
-            items={steps.map(item => ({ title: item.title }))}
+            items={steps.map((item) => ({ title: item.title }))}
           />
-          
+
           <Divider />
-          
+
           <Form
             form={form}
             layout="vertical"
@@ -583,38 +649,48 @@ function Doctor() {
             className="registration-form"
             initialValues={formData}
           >
-            <div className="steps-content">
-              {steps[currentStep].content}
-            </div>
-            
+            <div className="steps-content">{steps[currentStep].content}</div>
+
             <div className="steps-action">
               {currentStep > 0 && (
-                <Button 
-                  style={{ margin: '0 8px' }} 
+                <Button
+                  style={{ margin: "0 8px" }}
                   onClick={prevStep}
                   className="prev-button"
                 >
                   Previous
                 </Button>
               )}
-              
+
               {currentStep < steps.length - 1 && (
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   onClick={nextStep}
                   className="next-button"
                 >
                   Next
                 </Button>
               )}
-              
+
               {currentStep === steps.length - 1 && (
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   htmlType="submit"
                   className="submit-button"
                 >
                   {alreadyApproved ? "Update Profile" : "Submit Application"}
+                </Button>
+              )}
+
+              {/* Add the "Request Leave" button here */}
+              {alreadyApproved && (
+                <Button
+                  type="primary"
+                  icon={<CalendarOutlined />}
+                  onClick={showLeaveModal}
+                  style={{ marginLeft: "8px" }}
+                >
+                  Request Leave
                 </Button>
               )}
             </div>
@@ -630,21 +706,33 @@ function Doctor() {
           />
         </Card>
       )}
-      
+
       {/* Image Preview */}
       {previewImage && (
         <Image
-          wrapperStyle={{ display: 'none' }}
+          wrapperStyle={{ display: "none" }}
           preview={{
             visible: previewOpen,
             onVisibleChange: (visible) => setPreviewOpen(visible),
-            afterOpenChange: (visible) => !visible && setPreviewImage(''),
+            afterOpenChange: (visible) => !visible && setPreviewImage(""),
           }}
           src={previewImage}
         />
       )}
+
+      {/* Add the Doctor Leave Modal here */}
+      <DoctorLeaveModal
+        visible={leaveModalVisible}
+        onCancel={handleLeaveModalCancel}
+        doctorId={JSON.parse(localStorage.getItem("user"))?.id}
+        doctorName={`${formData.firstName || ""} ${
+          formData.lastName || ""
+        }`.trim()}
+        doctorEmail={`${formData.email} || ""`}
+      />
     </div>
   );
+
 }
 
 export default Doctor;
