@@ -47,6 +47,7 @@ const RescheduleLeaveHandler = () => {
           navigate('/');
         } else if (action === 'reschedule') {
           // For reschedule, get the doctor data
+
           const doctorResponse = await GetDoctorById(appointment.doctorId);
           
           if (!doctorResponse.success) {
@@ -56,7 +57,7 @@ const RescheduleLeaveHandler = () => {
           }
           
           // For reschedule, redirect to booking page with prefilled data
-          navigate(`/book-doctor/${appointment.doctorId}`, { 
+          navigate(`/book-appointment/${appointment.doctorId}`, { 
             state: { 
               isRescheduling: true,
               fromLeave: true,
