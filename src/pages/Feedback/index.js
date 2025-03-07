@@ -6,6 +6,7 @@ import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
 import feedbackImage from '../images/feedback.jpeg';
 import './Feedback.css';
+import { useNavigate } from 'react-router-dom';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -18,6 +19,7 @@ const Feedback = () => {
   const [previousFeedback, setPreviousFeedback] = useState([]);
   const [showPrevious, setShowPrevious] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   
   // Get user info from local storage
   const user = JSON.parse(localStorage.getItem("user"));
@@ -37,10 +39,16 @@ const Feedback = () => {
   }, [dispatch, user?.id]);
 
   useEffect(() => {
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
+
     if (user?.id) {
       fetchUserFeedback();
     }
-  }, [user?.id, fetchUserFeedback]);
+  }, [user?.id, fetchUserFeedback,navigate,user.role]);
   
   const handleSubmit = async (values) => {
     try {

@@ -15,6 +15,7 @@ import {
 } from "@ant-design/icons";
 import { isGuestUser } from "../apicalls/users";
 import RegistrationPopup from "../pages/Login/RegistrationPopup";
+import styles from "./Protected.module.css"; // Import CSS module
 
 function ProtectedRoute({ children }) {
   const [showPopup, setShowPopup] = useState(false);
@@ -82,6 +83,15 @@ function ProtectedRoute({ children }) {
     }
   };
 
+  // Handle guest user actions - centralized function
+  const handleGuestAction = () => {
+    if (isGuestUser()) {
+      setShowPopup(true); // Show the registration popup
+      return true; // Action was handled
+    }
+    return false; // Not a guest user or action not handled
+  };
+
   // Handle content click for guest users
   const handleContentClick = () => {
     if (isGuestUser()) {
@@ -99,11 +109,16 @@ function ProtectedRoute({ children }) {
   };
 
   // Handle menu navigation for regular users
-  const handleMenuClick = (e) => {
+  const handleMenuClick = (info) => {
+    // For guest users, show popup and prevent navigation
+    if (handleGuestAction()) {
+      return;
+    }
+    
     // Check profile completion for certain menu items
     const requiresCompleteProfile = ["1-1", "1-2", "5-1", "5-2"];
     
-    if (requiresCompleteProfile.includes(e.key) && !isProfileComplete()) {
+    if (requiresCompleteProfile.includes(info.key) && !isProfileComplete()) {
       notification.warning({
         message: 'Profile Incomplete',
         description: 'Please update your profile information first.',
@@ -114,9 +129,9 @@ function ProtectedRoute({ children }) {
     }
     
     // Set the selected key and navigate
-    setSelectedKey(e.key);
+    setSelectedKey(info.key);
     
-    switch(e.key) {
+    switch(info.key) {
       case "0": navigate("/"); break;
       case "1": navigate("/profile?tab=appointments"); break;
       case "1-1": navigate("/book-doctor"); break;
@@ -131,9 +146,14 @@ function ProtectedRoute({ children }) {
   };
 
   // Handle doctor menu navigation
-  const handleDoctorMenuClick = (e) => {
-    setSelectedKey(e.key);
-    switch (e.key) {
+  const handleDoctorMenuClick = (info) => {
+    // For guest users, show popup and prevent navigation
+    if (handleGuestAction()) {
+      return;
+    }
+    
+    setSelectedKey(info.key);
+    switch (info.key) {
       case "d-0":
         navigate("/doctor-dashboard");
         break;
@@ -155,24 +175,24 @@ function ProtectedRoute({ children }) {
   };
 
   return (
-    <div className="layout">
-      <div className="header bg-white p-2 flex items-center">
+    <div className={styles.layout}>
+      <div className={styles.header}>
         {/* Left side - Logo */}
-        <div className="flex-none">
-          <h2 className="cursor-pointer" onClick={handleLogoClick}>
-            <strong className="text-primary">Swasthya</strong>
-            <strong className="text-secondary">{" "}Seva</strong>
+        <div className={styles.logoContainer}>
+          <h2 className={styles.logo} onClick={handleLogoClick}>
+            <strong className={styles.textPrimary}>Swasthya</strong>
+            <strong className={styles.textSecondary}>{" "}Seva</strong>
           </h2>
         </div>
         
         {/* Middle - Navigation Menu for regular users */}
         {user && user.role !== "admin" && user.role !== "doctor" && (
-          <div className="flex-grow mx-4">
+          <div className={styles.menuContainer}>
             <Menu
               mode="horizontal"
               selectedKeys={[selectedKey]}
               onClick={handleMenuClick}
-              style={{ lineHeight: '40px', border: 'none' }}
+              className={styles.navMenu}
             >
               <Menu.Item key="0" icon={<SearchOutlined />}>
                 Home
@@ -215,12 +235,12 @@ function ProtectedRoute({ children }) {
         
         {/* Navigation Menu for Doctors */}
         {user && user.role === "doctor" && (
-          <div className="flex-grow mx-4">
+          <div className={styles.menuContainer}>
             <Menu
               mode="horizontal"
               selectedKeys={[selectedKey]}
               onClick={handleDoctorMenuClick}
-              style={{ lineHeight: "40px", border: "none" }}
+              className={styles.navMenu}
             >
               <Menu.Item key="d-0" icon={<DashboardOutlined />}>
                 Home
@@ -247,10 +267,10 @@ function ProtectedRoute({ children }) {
         
         {/* Right side - User info */}
         {user && (
-          <div className="flex-none flex gap-3 items-center ml-auto">
-            <div className="flex gap-1 items-center">
-              <i className="ri-shield-user-fill cursor-pointer" onClick={handleNameClick}></i> 
-              <h4 className="uppercase cursor-pointer underline" onClick={handleNameClick}>
+          <div className={styles.userInfo}>
+            <div className={styles.userProfile}>
+              <i className={`ri-shield-user-fill ${styles.userIcon}`} onClick={handleNameClick}></i> 
+              <h4 className={styles.userName} onClick={handleNameClick}>
                 {user.name}
                 {user.isGuest && (
                   <span 
@@ -269,7 +289,7 @@ function ProtectedRoute({ children }) {
             {user.isGuest ? (
               <div className="flex gap-2">
                 <button 
-                  className="bg-primary text-white text-xs px-2 py-1 rounded"
+                  className={styles.registerButton}
                   onClick={() => navigate("/register")}
                 >
                   Register
@@ -277,7 +297,7 @@ function ProtectedRoute({ children }) {
               </div>
             ) : (
               <i 
-                className="ri-logout-box-r-line cursor-pointer" 
+                className={`ri-logout-box-r-line ${styles.logoutIcon}`}
                 onClick={() => {
                   localStorage.removeItem("user");
                   navigate("/login");
@@ -289,7 +309,7 @@ function ProtectedRoute({ children }) {
       </div>
       
       {/* Content */}
-      <div className="content my-1" onClick={handleContentClick}>
+      <div className={styles.content} onClick={handleContentClick}>
         {React.Children.map(children, (child) => {
           return React.cloneElement(child, {
             onClick: (e) => {
@@ -300,6 +320,8 @@ function ProtectedRoute({ children }) {
             },
           });
         })}
+        
+        {/* Registration popup - shown when showPopup is true */}
         {showPopup && (
           <RegistrationPopup
             onClose={() => setShowPopup(false)}

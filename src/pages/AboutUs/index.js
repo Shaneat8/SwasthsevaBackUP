@@ -4,6 +4,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { Power4, Elastic } from "gsap";
+import { useNavigate } from "react-router-dom";
+import { message } from "antd";
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
@@ -12,8 +14,16 @@ const About = () => {
   const sectionsRef = useRef(null);
   const storySectionRef = useRef(null);
   const teamSectionRef = useRef(null);
+  const navigate=useNavigate();
 
   useEffect(() => {
+    const user =JSON.parse(localStorage.getItem("user"));
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
+
     if (!horizontalSectionRef.current || !sectionsRef.current) return;
 
     const sections = sectionsRef.current.getElementsByClassName(styles.panel);
@@ -239,7 +249,7 @@ const About = () => {
     return () => {
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <div className={styles.container}>

@@ -267,8 +267,14 @@ function Doctor() {
   }, [dispatch, form]);
 
   useEffect(() => {
+    const user=JSON.parse(localStorage.getItem('user'));
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
     CheckAlreadyApplied();
-  }, [CheckAlreadyApplied]);
+  }, [CheckAlreadyApplied,navigate]);
 
   const uploadButton = (
     <div>

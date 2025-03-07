@@ -143,6 +143,11 @@ function BookTest() {
         nav("/login");
         return;
       }
+       if(user.role==="guest"){
+              message.error("Please register before accessing");
+              nav('/');
+              return;
+            }
 
       try {
         dispatch(ShowLoader(true));

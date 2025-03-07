@@ -45,6 +45,11 @@ function BookAppointment() {
   useEffect(() => {
     const checkProfileCompletion = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
+      if(user.role==="guest"){
+        message.error("Please register before accessing");
+        nav('/');
+        return;
+      }
       if (!user?.id) {
         message.error("Please login to continue");
         nav("/login");

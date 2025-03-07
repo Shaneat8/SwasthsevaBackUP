@@ -120,6 +120,11 @@ function Prescription() {
   }, []);
 
   useEffect(() => {
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            nav('/');
+            return;
+          }
     checkAccess();
     fetchMedicineList();
     fetchExistingPrescription();

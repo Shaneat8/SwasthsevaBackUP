@@ -1,0 +1,117 @@
+/* Navigation bar styling */
+.layout {
+    font-family: "Montserrat", sans-serif !important;
+  }
+  
+  .header {
+    background-color: white;
+    box-shadow: 0 0 2px 0 #d3d2d2;
+    border-radius: 4px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    height: 80px; /* Increased height for the container */
+  }
+  
+  .logoContainer {
+    flex: none;
+  }
+  
+  .logo {
+    cursor: pointer;
+    font-size: 26px; /* Larger font size for the logo */
+  }
+  
+  .textPrimary {
+    color: #5c2e7e;
+    font-weight: bold;
+  }
+  
+  .textSecondary {
+    color: #8bbccc;
+    font-weight: bold;
+  }
+  
+  .menuContainer {
+    flex-grow: 1;
+    margin: 0 20px;
+  }
+  
+  /* Override Ant Design menu styling */
+  .navMenu {
+    line-height: 50px !important; /* Increased line height */
+    border: none !important;
+    font-size: 16px !important; /* Increased font size for menu items */
+  }
+  
+  .navMenu :global(.ant-menu-item),
+  .navMenu :global(.ant-menu-submenu-title) {
+    font-size: 16px !important; /* Ensure submenu titles also have larger font */
+    font-weight: 500;
+  }
+  
+  .userInfo {
+    flex: none;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: auto;
+  }
+  
+  .userProfile {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .userName {
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 18px; /* Larger font size for username */
+    font-weight: 600;
+  }
+  
+  .userIcon {
+    cursor: pointer;
+    font-size: 22px; /* Larger icon */
+  }
+  
+  .logoutIcon {
+    cursor: pointer;
+    font-size: 22px; /* Larger icon */
+  }
+  
+  .registerButton {
+    background-color: #5c2e7e;
+    color: white;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .content {
+    margin: 12px 0;
+  }
+  
+  /* For responsive design */
+  @media (max-width: 768px) {
+    .header {
+      flex-direction: column;
+      height: auto;
+      padding: 10px;
+    }
+    
+    .menuContainer {
+      width: 100%;
+      margin: 10px 0;
+    }
+    
+    .userInfo {
+      margin-top: 10px;
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }

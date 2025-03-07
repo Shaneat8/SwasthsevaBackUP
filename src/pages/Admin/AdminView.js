@@ -59,7 +59,6 @@ const StatCard = ({ title, value, trend, trendsUp, onClick }) => (
 
 const ListView = ({ type, data, onStatusUpdate }) => {
   const [loading] = useState(false);
-
   const doctorColumns = [
     {
       title: "First Name",

@@ -251,8 +251,13 @@ function Appointments() {
   };
 
   useEffect(() => {
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
     getData();
-  }, [getData]);
+  }, [getData,navigate,user.role]);
 
   return (
     <div className="p-4">

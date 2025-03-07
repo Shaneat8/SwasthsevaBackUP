@@ -7,7 +7,7 @@ import {
   ExclamationCircleOutlined 
 } from '@ant-design/icons';
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import firestoredb from '../../firebaseConfig';
 
 const { TextArea } = Input;
@@ -18,6 +18,7 @@ const TicketTracking = () => {
   const [loading, setLoading] = useState(true);
   const [userResponse, setUserResponse] = useState('');
   const [isResolutionModalVisible, setIsResolutionModalVisible] = useState(false);
+  const navigate=useNavigate();
 
   const getStatusColor = (status) => {
     const colors = {
@@ -66,8 +67,14 @@ const TicketTracking = () => {
   }, [ticketId]);
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
     fetchTicketDetails();
-  }, [fetchTicketDetails]);
+  }, [fetchTicketDetails,navigate]);
 
   const canReopen = (closedDate) => {
     if (!closedDate) return false;

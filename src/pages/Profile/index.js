@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
-import { Button, Card, Tag } from "antd";
+import { Button, Card, message, Tag } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 
 // Import components lazily to improve initial load time
@@ -64,13 +64,18 @@ function Profile() {
 
   // Cleanup on component unmount
   React.useEffect(() => {
+    if(user.role==="guest"){
+      message.error("Please register before accessing");
+      navigate('/');
+      return;
+    }
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
     };
-  }, []);
+  }, [navigate,user.role]);
 
   // Render content based on the current tab
   const renderContent = () => {

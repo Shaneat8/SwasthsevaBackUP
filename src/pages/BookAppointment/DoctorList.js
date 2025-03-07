@@ -171,11 +171,17 @@ const DoctorList = () => {
 
   // Load favorites from localStorage
   useEffect(() => {
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
+
     const savedFavorites = localStorage.getItem('favoriteDoctors');
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
-  }, []);
+  }, [navigate,user.role]);
 
   // Save favorites to localStorage when updated
   useEffect(() => {

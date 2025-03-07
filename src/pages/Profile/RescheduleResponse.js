@@ -17,6 +17,13 @@ function RescheduleResponse() {
   const antIcon = <LoadingOutlined className="text-blue-500 text-3xl" spin />;
 
   useEffect(() => {
+    const user =JSON.parse(localStorage.getItem("user"))
+     if(user.role==="guest"){
+            message.error("Please register before accessing");
+            navigate('/');
+            return;
+          }
+
     const handleResponse = async () => {
       dispatch(ShowLoader(true));
       try {

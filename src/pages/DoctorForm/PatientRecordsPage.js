@@ -118,11 +118,17 @@
     }, [patientId]);
 
     useEffect(() => {
+      const user =JSON.parse(localStorage.getItem("user"));
+       if(user.role==="guest"){
+              message.error("Please register before accessing");
+              navigate('/');
+              return;
+            }
       if (patientId) {
         fetchPatientData();
         fetchAllRecords();
       }
-    }, [patientId, fetchPatientData, fetchAllRecords]);
+    }, [patientId, fetchPatientData, fetchAllRecords,navigate]);
 
     const handleBack = () => {
       const returnPath = location.state?.returnPath || "/";
