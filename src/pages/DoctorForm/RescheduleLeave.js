@@ -1,18 +1,13 @@
-// This represents the React component to handle the reschedule-leave URLs
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { GetAppointmentById, HandleLeaveResponse } from '../../apicalls/appointment';
 import { GetDoctorById } from '../../apicalls/doctors';
-import { message } from 'antd';
-
+import { message, Spin } from 'antd';
 
 const RescheduleLeaveHandler = () => {
   const { appointmentId, action } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [appointmentData, setAppointmentData] = useState(null);
-  const [doctorData, setDoctorData] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -37,16 +32,6 @@ const RescheduleLeaveHandler = () => {
           return;
         }
         
-        setAppointmentData(appointment);
-        
-        // Get doctor data if we need to reschedule
-        if (action === 'reschedule') {
-          const doctorResponse = await GetDoctorById(appointment.doctorId);
-          if (doctorResponse.success) {
-            setDoctorData(doctorResponse.data);
-          }
-        }
-        
         // Process the action
         const response = await HandleLeaveResponse(appointmentId, action);
         
@@ -61,13 +46,22 @@ const RescheduleLeaveHandler = () => {
           message.success('Your appointment has been cancelled');
           navigate('/');
         } else if (action === 'reschedule') {
+          // For reschedule, get the doctor data
+          const doctorResponse = await GetDoctorById(appointment.doctorId);
+          
+          if (!doctorResponse.success) {
+            setError('Could not retrieve doctor information');
+            setLoading(false);
+            return;
+          }
+          
           // For reschedule, redirect to booking page with prefilled data
-          navigate('/book-appointment', { 
+          navigate(`/book-doctor/${appointment.doctorId}`, { 
             state: { 
               isRescheduling: true,
               fromLeave: true,
               appointmentData: response.appointmentData,
-              doctorData: doctorData 
+              doctorData: doctorResponse.data 
             } 
           });
         }
@@ -81,13 +75,13 @@ const RescheduleLeaveHandler = () => {
     };
     
     loadAppointmentData();
-  }, [appointmentId, action, navigate,appointmentData,doctorData]);
+  }, [appointmentId, action, navigate]); // Remove appointmentData and doctorData from dependencies
 
   if (loading) {
     return (
       <div className="text-center p-8">
         <h2 className="text-xl font-semibold mb-4">Processing Your Request</h2>
-        <div className="spinner"></div>
+        <Spin size="large" />
         <p className="mt-4">Please wait while we process your request...</p>
       </div>
     );

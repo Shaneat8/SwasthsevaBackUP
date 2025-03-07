@@ -272,7 +272,10 @@ export const HandleLeaveResponse = async (appointmentId, action) => {
       };
     }
 
-    const appointmentData = appointmentSnap.data();
+    const appointmentData = {
+      ...appointmentSnap.data(),
+      id: appointmentSnap.id
+    };
     
     // Verify the appointment is affected by leave
     if (appointmentData.status !== "affected-by-leave") {
@@ -310,14 +313,19 @@ export const HandleLeaveResponse = async (appointmentId, action) => {
       };
       
     } else if (action === "reschedule") {
-      // Don't actually reschedule here - just mark that the patient wants to reschedule
-      // and return data to help populate the booking form
+      // Mark the appointment as being rescheduled
+      await updateDoc(appointmentRef, {
+        leaveResponseAction: "rescheduling",
+        leaveResponseDate: new Date().toISOString()
+      });
       
+      // Return data to help populate the booking form
       return {
         success: true,
         message: "Ready to reschedule appointment",
         action: "reschedule",
         appointmentData: {
+          id: appointmentId,
           doctorId: appointmentData.doctorId,
           doctorName: appointmentData.doctorName,
           userId: appointmentData.userId,
@@ -327,7 +335,8 @@ export const HandleLeaveResponse = async (appointmentId, action) => {
           originalDate: appointmentData.date,
           originalTimeSlot: appointmentData.timeSlot,
           leaveStartDate: appointmentData.leaveStartDate,
-          leaveEndDate: appointmentData.leaveEndDate
+          leaveEndDate: appointmentData.leaveEndDate,
+          status: appointmentData.status
         }
       };
     } else {

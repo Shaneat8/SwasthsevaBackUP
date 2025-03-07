@@ -44,7 +44,7 @@ function App() {
           <Route path="/appointment/:appointmentId" element={<ProtectedRoute><Prescription/></ProtectedRoute>}/>                   
           <Route path="/appointment" element={<ProtectedRoute><Appointments/></ProtectedRoute>}/>                   
           <Route path="/reschedule/:id/:response" element={<RescheduleResponse />} />
-          <Route path="/reschedule-leave/:appointmentId/:action" element={<RescheduleLeaveHandler />} />
+          <Route path="/reschedule-leave/:appointmentId/:action" element={ <RescheduleLeaveHandler /> } />
           <Route path="/patient-records/:patientId" element={<PatientRecordsPage />} />
 
           <Route path="/track-ticket/:ticketId" element={<ProtectedRoute><TicketTracking/></ProtectedRoute>} />

@@ -1,7 +1,7 @@
 import { Button, Input, message, Card, Tag, Typography, Divider, Alert } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { GetDoctorById } from "../../apicalls/doctors";
 import moment from "moment";
@@ -40,6 +40,9 @@ function BookAppointment() {
   const nav = useNavigate();
   const { id } = useParams();
   const dispatch = useDispatch();
+  const { state } = useLocation(); // Add this import: import { useLocation } from 'react-router-dom';
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [originalAppointmentData, setOriginalAppointmentData] = useState(null);
   
   
   // Handle back button click
@@ -74,10 +77,24 @@ function BookAppointment() {
       } catch (error) {
         message.error("Failed to check profile completion. Please try again.");
       }
+    
     };
 
+    if (state && state.isRescheduling && state.fromLeave && state.appointmentData) {
+      setIsRescheduling(true);
+      setOriginalAppointmentData(state.appointmentData);
+      
+      // Pre-populate form fields
+      setProblem(state.appointmentData.problem || "");
+      
+      // Note: don't set the date/time yet as we need to find available slots first
+      
+      // Maybe show a message
+      message.info("Please select a new date and time for your appointment");
+    }
+
     checkProfileCompletion();
-  }, [nav]);
+  }, [nav,state]);
 
   const getData = useCallback(async () => {
     try {
@@ -185,12 +202,12 @@ function BookAppointment() {
       message.error(`Cannot book appointment. Dr. ${doctor.firstName} ${doctor.lastName} is on leave on ${date}. Reason: ${leaveReason}`);
       return;
     }
-
     try {
       dispatch(ShowLoader(true));
 
       const user = JSON.parse(localStorage.getItem("user"));
 
+      // Base payload
       const payload = {
         doctorId: doctor.id,
         userId: user.id,
@@ -206,11 +223,25 @@ function BookAppointment() {
         problem,
         status: "pending",
       };
+
+      // If rescheduling from leave cancellation, add relevant info
+      if (isRescheduling && originalAppointmentData) {
+        payload.isRescheduledFromLeave = true;
+        payload.originalAppointmentId = originalAppointmentData.id;
+        payload.originalDate = originalAppointmentData.originalDate;
+        payload.originalTimeSlot = originalAppointmentData.originalTimeSlot;
+        
+        // You might want to mark this as pre-approved if it was rescheduling a previously approved appointment
+        if (originalAppointmentData.status === "approved" || originalAppointmentData.status === "affected-by-leave") {
+          payload.status = "approved";
+        }
+      }
+
       const response = await BookDoctorAppointment(payload);
       dispatch(ShowLoader(false));
       if (response.success) {
         message.success(response.message);
-         // Check profile completion status after booking
+        // Check profile completion status after booking
           const profileCheck = await CheckProfileCompletion(payload.userId);
           if (profileCheck.success) {
             if (profileCheck.profileComplete) {
