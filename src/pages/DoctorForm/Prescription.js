@@ -120,15 +120,16 @@ function Prescription() {
   }, []);
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
      if(user.role==="guest"){
             message.error("Please register before accessing");
-            nav('/');
+            navigate('/');
             return;
           }
     checkAccess();
     fetchMedicineList();
     fetchExistingPrescription();
-  }, [checkAccess, fetchMedicineList, fetchExistingPrescription]);
+  }, [checkAccess, fetchMedicineList, fetchExistingPrescription,navigate]);
 
   const storePrescriptionData = async (prescriptionData) => {
     try {
