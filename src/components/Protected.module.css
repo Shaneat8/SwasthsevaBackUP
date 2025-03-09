@@ -1,117 +1,295 @@
-/* Navigation bar styling */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+
+
+/* Basic layout and container styles */
 .layout {
-    font-family: "Montserrat", sans-serif !important;
-  }
-  
+  font-family: "Montserrat", sans-serif !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.header {
+  background-color: white;
+  width: 100vw; /* Full viewport width */
+  max-width: 100%;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  height: 80px;
+  width: 100%;
+  margin: 0;
+}
+
+
+.logoContainer {
+  flex: none;
+}
+
+.logo {
+  cursor: pointer;
+  font-size: 26px;
+  margin: 0;
+}
+
+.textPrimary {
+  color: #5c2e7e;
+  font-weight: bold;
+}
+
+.textSecondary {
+  color: #8bbccc;
+  font-weight: bold;
+}
+
+.menuContainer {
+  flex-grow: 1;
+  margin: 0 20px;
+}
+
+/* Override Ant Design menu styling */
+.navMenu {
+  line-height: 50px !important;
+  border: none !important;
+  font-size: 16px !important;
+}
+
+.navMenu :global(.ant-menu-item),
+.navMenu :global(.ant-menu-submenu-title) {
+  font-size: 16px !important;
+  font-weight: 500;
+}
+
+.userInfo {
+  flex: none;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.userProfile {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.userName {
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #363636;
+}
+
+.userIcon {
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.logoutIcon {
+  cursor: pointer;
+  font-size: 22px;
+}
+
+
+.content {
+  flex: 1;
+  padding: 0; /* Remove padding */
+  position: relative;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Enhanced Registration popup styles */
+:global(.registration-popup-overlay) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+:global(.registration-popup-content) {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  width: 90%;
+  max-width: 420px;
+  overflow: hidden;
+}
+
+:global(.registration-popup-header) {
+  background: linear-gradient(135deg, #5c2e7e, #8bbccc);
+  padding: 24px 30px;
+  text-align: left;
+  color: white;
+  position: relative;
+}
+
+:global(.registration-popup-title) {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: white !important;
+}
+
+:global(.registration-popup-subtitle) {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-top: 6px;
+  color: white !important;
+  font-weight: 400;
+}
+
+:global(.registration-popup-close) {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+:global(.registration-popup-close:hover) {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:global(.registration-popup-body) {
+  padding: 24px 30px;
+}
+
+:global(.registration-popup-body p) {
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: #333;
+}
+
+:global(.registration-popup-features) {
+  list-style-type: none;
+  padding: 0;
+  margin: 16px 0 24px 0;
+}
+
+:global(.registration-popup-features li) {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #555;
+}
+
+:global(.registration-popup-features li span) {
+  color: #5c2e7e;
+  font-weight: bold;
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+:global(.registration-popup-button) {
+  height: 50px;
+  border-radius: 8px;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  border: none;
+  margin-top: 5px;
+}
+
+:global(.registration-popup-button-primary) {
+  background: #5c2e7e;
+  color: white;
+  box-shadow: 0 4px 12px rgba(92, 46, 126, 0.3);
+}
+
+:global(.registration-popup-button-primary:hover) {
+  background: #4a2567;
+  box-shadow: 0 6px 16px rgba(92, 46, 126, 0.4);
+}
+
+:global(.registration-popup-icon) {
+  font-size: 18px;
+}
+
+:global(.registration-popup-footer) {
+  background-color: #f5f5f5;
+  padding: 15px 30px;
+  text-align: center;
+  border-top: 1px solid #eee;
+}
+
+:global(.registration-popup-footer p) {
+  margin: 0;
+  font-size: 13px;
+  color: #777 !important;
+  font-weight: 400;
+}
+
+:global(.registration-popup-link) {
+  color: #5c2e7e !important;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+:global(.registration-popup-link:hover) {
+  text-decoration: underline;
+}
+
+/* For responsive design */
+@media (max-width: 768px) {
   .header {
-    background-color: white;
-    box-shadow: 0 0 2px 0 #d3d2d2;
-    border-radius: 4px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    height: 80px; /* Increased height for the container */
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
   }
-  
-  .logoContainer {
-    flex: none;
-  }
-  
-  .logo {
-    cursor: pointer;
-    font-size: 26px; /* Larger font size for the logo */
-  }
-  
-  .textPrimary {
-    color: #5c2e7e;
-    font-weight: bold;
-  }
-  
-  .textSecondary {
-    color: #8bbccc;
-    font-weight: bold;
-  }
-  
+    
   .menuContainer {
-    flex-grow: 1;
-    margin: 0 20px;
+    width: 100%;
+    margin: 10px 0;
   }
-  
-  /* Override Ant Design menu styling */
-  .navMenu {
-    line-height: 50px !important; /* Increased line height */
-    border: none !important;
-    font-size: 16px !important; /* Increased font size for menu items */
-  }
-  
-  .navMenu :global(.ant-menu-item),
-  .navMenu :global(.ant-menu-submenu-title) {
-    font-size: 16px !important; /* Ensure submenu titles also have larger font */
-    font-weight: 500;
-  }
-  
+    
   .userInfo {
-    flex: none;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-left: auto;
+    margin-top: 10px;
+    width: 100%;
+    justify-content: flex-end;
   }
   
-  .userProfile {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  :global(.registration-popup-content) {
+    width: 95%;
+    max-width: 360px;
   }
   
-  .userName {
-    text-transform: uppercase;
-    cursor: pointer;
-    text-decoration: underline;
-    font-size: 18px; /* Larger font size for username */
-    font-weight: 600;
+  :global(.registration-popup-header) {
+    padding: 20px 25px;
   }
   
-  .userIcon {
-    cursor: pointer;
-    font-size: 22px; /* Larger icon */
+  :global(.registration-popup-body) {
+    padding: 20px 25px;
   }
-  
-  .logoutIcon {
-    cursor: pointer;
-    font-size: 22px; /* Larger icon */
-  }
-  
-  .registerButton {
-    background-color: #5c2e7e;
-    color: white;
-    font-size: 14px;
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .content {
-    margin: 12px 0;
-  }
-  
-  /* For responsive design */
-  @media (max-width: 768px) {
-    .header {
-      flex-direction: column;
-      height: auto;
-      padding: 10px;
-    }
-    
-    .menuContainer {
-      width: 100%;
-      margin: 10px 0;
-    }
-    
-    .userInfo {
-      margin-top: 10px;
-      width: 100%;
-      justify-content: flex-end;
-    }
-  }
+}

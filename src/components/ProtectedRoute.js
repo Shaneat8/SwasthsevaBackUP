@@ -15,7 +15,7 @@ import {
 } from "@ant-design/icons";
 import { isGuestUser } from "../apicalls/users";
 import RegistrationPopup from "../pages/Login/RegistrationPopup";
-import styles from "./Protected.module.css"; // Import CSS module
+import styles from "./Protected.module.css";
 
 function ProtectedRoute({ children }) {
   const [showPopup, setShowPopup] = useState(false);
@@ -83,15 +83,6 @@ function ProtectedRoute({ children }) {
     }
   };
 
-  // Handle guest user actions - centralized function
-  const handleGuestAction = () => {
-    if (isGuestUser()) {
-      setShowPopup(true); // Show the registration popup
-      return true; // Action was handled
-    }
-    return false; // Not a guest user or action not handled
-  };
-
   // Handle content click for guest users
   const handleContentClick = () => {
     if (isGuestUser()) {
@@ -109,16 +100,17 @@ function ProtectedRoute({ children }) {
   };
 
   // Handle menu navigation for regular users
-  const handleMenuClick = (info) => {
+  const handleMenuClick = (e) => {
     // For guest users, show popup and prevent navigation
-    if (handleGuestAction()) {
+    if (isGuestUser()) {
+      setShowPopup(true);
       return;
     }
     
     // Check profile completion for certain menu items
     const requiresCompleteProfile = ["1-1", "1-2", "5-1", "5-2"];
     
-    if (requiresCompleteProfile.includes(info.key) && !isProfileComplete()) {
+    if (requiresCompleteProfile.includes(e.key) && !isProfileComplete()) {
       notification.warning({
         message: 'Profile Incomplete',
         description: 'Please update your profile information first.',
@@ -129,9 +121,9 @@ function ProtectedRoute({ children }) {
     }
     
     // Set the selected key and navigate
-    setSelectedKey(info.key);
+    setSelectedKey(e.key);
     
-    switch(info.key) {
+    switch(e.key) {
       case "0": navigate("/"); break;
       case "1": navigate("/profile?tab=appointments"); break;
       case "1-1": navigate("/book-doctor"); break;
@@ -146,14 +138,9 @@ function ProtectedRoute({ children }) {
   };
 
   // Handle doctor menu navigation
-  const handleDoctorMenuClick = (info) => {
-    // For guest users, show popup and prevent navigation
-    if (handleGuestAction()) {
-      return;
-    }
-    
-    setSelectedKey(info.key);
-    switch (info.key) {
+  const handleDoctorMenuClick = (e) => {
+    setSelectedKey(e.key);
+    switch (e.key) {
       case "d-0":
         navigate("/doctor-dashboard");
         break;
@@ -289,11 +276,13 @@ function ProtectedRoute({ children }) {
             {user.isGuest ? (
               <div className="flex gap-2">
                 <button 
-                  className={styles.registerButton}
-                  onClick={() => navigate("/register")}
-                >
-                  Register
-                </button>
+                  className={`ri-logout-box-r-line ${styles.logoutIcon}`}
+                  onClick={() => {
+                    localStorage.removeItem("user");
+                    navigate("/register");
+                  }}
+                />
+                
               </div>
             ) : (
               <i 
@@ -320,8 +309,6 @@ function ProtectedRoute({ children }) {
             },
           });
         })}
-        
-        {/* Registration popup - shown when showPopup is true */}
         {showPopup && (
           <RegistrationPopup
             onClose={() => setShowPopup(false)}

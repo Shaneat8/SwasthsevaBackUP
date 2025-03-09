@@ -10,6 +10,9 @@ import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
+import { CalendarOutlined } from "@ant-design/icons";
+import DoctorLeaveModal from "../DoctorForm/DoctorLeaveModal";
+
 
 function Appointments() {
   const [appointments, setAppointments] = useState([]);
@@ -17,6 +20,7 @@ function Appointments() {
   const [isRescheduleModalVisible, setIsRescheduleModalVisible] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [form] = Form.useForm();
+  const [leaveModalVisible, setLeaveModalVisible] = useState(false);
   
   const user = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
@@ -31,6 +35,14 @@ function Appointments() {
     "03:00 PM - 04:00 PM",
     "04:00 PM - 05:00 PM",
   ];
+
+  const showLeaveModal = () => {
+    setLeaveModalVisible(true);
+  };
+
+  const handleLeaveModalCancel = () => {
+    setLeaveModalVisible(false);
+  };
 
   const getData = useCallback(async () => {
     try {
@@ -264,24 +276,36 @@ function Appointments() {
       <h1 className="text-2xl font-semibold mb-4">Appointments</h1>
       
       {user.role === "doctor" ? (
-        <Tabs defaultActiveKey="1">
-          <Tabs.TabPane tab="Today's Appointments" key="1">
-            <Table 
-              columns={getColumns()} 
-              dataSource={currentDayAppointments}
-              rowKey="id"
-              scroll={{ x: true }}
-            />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="All Appointments" key="2">
-            <Table 
-              columns={getColumns()} 
-              dataSource={appointments}
-              rowKey="id"
-              scroll={{ x: true }}
-            />
-          </Tabs.TabPane>
-        </Tabs>
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex-grow"></div>
+            <Button 
+              type="primary" 
+              icon={<CalendarOutlined />} 
+              onClick={showLeaveModal}
+            >
+              Request Leave
+            </Button>
+          </div>
+          <Tabs defaultActiveKey="1">
+            <Tabs.TabPane tab="Today's Appointments" key="1">
+              <Table 
+                columns={getColumns()} 
+                dataSource={currentDayAppointments}
+                rowKey="id"
+                scroll={{ x: true }}
+              />
+            </Tabs.TabPane>
+            <Tabs.TabPane tab="All Appointments" key="2">
+              <Table 
+                columns={getColumns()} 
+                dataSource={appointments}
+                rowKey="id"
+                scroll={{ x: true }}
+              />
+            </Tabs.TabPane>
+          </Tabs>
+        </div>
       ) : (
         <Table 
           columns={getColumns()} 
@@ -358,6 +382,15 @@ function Appointments() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Doctor Leave Modal */}
+      <DoctorLeaveModal
+        visible={leaveModalVisible}
+        onCancel={handleLeaveModalCancel}
+        doctorId={user.id}
+        doctorName={user.name || ""}
+        doctorEmail={user.email || ""}
+      />
     </div>
   );
 }

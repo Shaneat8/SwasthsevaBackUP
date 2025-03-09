@@ -1,143 +1,158 @@
 .container {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    overflow: hidden;
-    background-image: url('../images/rbg.png');
-    background-size: 100% 100%;
-  }
-  
-  .part {
-    position: relative;
-    width: 70%;
-    height: auto;
-    min-height: 600px;
-    max-width: 1250px;
-    display: flex;
-    flex-direction: row-reverse; /* Reversed the flex direction */
-    justify-content: space-between;
-    align-items: stretch;
-    color: black;
-    text-align: center;
-    border-radius: 20px;
-    overflow: hidden;
-    padding: 0;
-    z-index: 2;
-    background: white;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  
-  .left {
-    position: relative;
-    width: 40%; /* Changed width to 40% */
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    padding: 40px;
-    background: transparent;
-  }
-  
-  .right {
-    position: relative;
-    width: 60%; /* Changed width to 60% */
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-  }
-  
-  /* Add a background container that spans both left and right sides */
-  .part::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('../images/rf_bg.png');
-    background-size: cover;
-    background-position: center;
-    z-index: -1;
-  }
-  
-  /* Add an overlay to the left side to make content more readable */
-  .left::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 80%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: -1;
-  }
-  
-  .formContainer {
-    width: 100%;
-    max-width: 400px;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .heading {
-    font-size: 32px;
-    font-weight: 700;
-    color: #1a1a1a;
-    text-align: center;
-    margin-bottom: 8px;
-  }
-  
-  .registerForm {
-    width: 100%;
-  }
-  
-  .registerForm :global(.ant-form-item-label > label) {
-    font-size: 16px;
-    font-weight: 500;
-    color: #374151;
-  }
-  
-  .alreadyAccount {
-    margin-top: 24px;
-    text-align: center;
-    font-size: 14px;
-    color: #6b7280;
-  }
-  
-  .alreadyAccount a {
-    color: #3b82f6;
-    text-decoration: none;
-  }
-  
-  .alreadyAccount a:hover {
-    color: #2563eb;
-  }
-  
-  .registerForm :global(.ant-btn-primary) {
-    background: #3b82f6;
-    border: none;
-    height: 45px;
-    font-size: 16px;
-    font-weight: 500;
-  }
-  
-  .registerForm :global(.ant-btn-primary:hover) {
-    background: #2563eb;
-  }
-  
-  .registerForm :global(.ant-form-item) {
-    margin-bottom: 20px;
-  }
-  
-  .registerForm :global(.ant-form-item-explain-error) {
-    font-size: 12px;
-    color: #ef4444;
-    text-align: left;
-  }
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow: hidden;
+  background-image: url('../images/rbg.png');
+  background-size: 100% 100%;
+}
 
-  
+.part {
+  position: relative;
+  width: 70%;
+  height: auto;
+  min-height: 600px;
+  max-width: 1250px;
+  display: flex;
+  flex-direction: row-reverse; /* Reversed the flex direction */
+  justify-content: space-between;
+  align-items: stretch;
+  color: black;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 0;
+  z-index: 2;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.left {
+  position: relative;
+  width: 40%; /* Changed width to 40% */
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 40px;
+  background: transparent;
+}
+
+.right {
+  position: relative;
+  width: 60%; /* Changed width to 60% */
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Add a background container that spans both left and right sides */
+.part::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../images/rf_bg.png');
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
+
+/* Add an overlay to the left side to make content more readable */
+.left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: -1;
+  border-radius: 20px;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+}
+
+.heading {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.registerForm {
+  width: 100%;
+}
+
+.registerForm :global(.ant-form-item-label > label) {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.alreadyAccount {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.alreadyAccount a {
+  color: #2e2929;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.alreadyAccount a:hover {
+  color: #2563eb;
+}
+
+.registerForm :global(.ant-btn-primary) {
+  background: #3b82f6;
+  border: none;
+  height: 45px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.registerForm :global(.ant-btn-primary:hover) {
+  background: #2563eb;
+}
+
+.registerForm :global(.ant-form-item) {
+  margin-bottom: 20px;
+}
+
+.registerForm :global(.ant-form-item-explain-error) {
+  font-size: 12px;
+  color: #ef4444;
+  text-align: left;
+}
+
+.loginLink {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.color1{
+  color: #5c2e7e;;
+}
+
+.color2{
+  color: #8bbccc;
+}

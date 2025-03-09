@@ -3,28 +3,25 @@ import Footer from "./Design/Footer";
 import Testimonials from "./Design/Testimonials";
 import CTASection from "./Design/CTASection";
 import DoctorCardSection from "./Design/DoctorCardSection";
-import HeroSlider from "./Design/HeroSlider";
+import LabTestSection from "./Design/LabTestSection";
+import HeroSlider from "./Slider/Slider";
 
 
 function Home() {
-  const user = JSON.parse(localStorage.getItem("user"));
-
 
   return (
-    user && (
-      <>  
-      <br/> <HeroSlider/><br/>
+    <>
+   
+    
+    {/* Existing ones */}
+      <HeroSlider/>
       <DoctorCardSection/>
-      <br/><br/>
+      <LabTestSection/>
       <CTASection/>
-      <br/><br/>
       <Testimonials/>
-      <br/><br/>
-      <Footer/>    
-      </>
-    ) 
+      <Footer/>
+    </>
   );
 }
-
 
 export default Home;

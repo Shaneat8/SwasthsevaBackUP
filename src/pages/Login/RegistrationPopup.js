@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { ShowLoader } from '../../redux/loaderSlice';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserOutlined, CloseOutlined } from '@ant-design/icons';
 
 const RegistrationPopup = ({ onClose, className }) => {
   const navigate = useNavigate();
@@ -55,35 +57,85 @@ const RegistrationPopup = ({ onClose, className }) => {
     e.stopPropagation();
   };
 
+  // Animation variants for Framer Motion
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.3 } }
+  };
+
+  const popupVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: { 
+        type: 'spring', 
+        damping: 25, 
+        stiffness: 300,
+        delay: 0.1
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: 20, 
+      scale: 0.95,
+      transition: { duration: 0.2 }
+    }
+  };
+
   return (
-    <div 
-      className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${className || ''}`}
-      onClick={onClose}
-    >
-      <div 
-        className="bg-white p-4 rounded shadow-lg max-w-md w-full"
-        onClick={handlePopupClick}
+    <AnimatePresence>
+      <motion.div 
+        className={`registration-popup-overlay ${className || ''}`}
+        initial="hidden"
+        animate="visible"
+        exit="hidden"
+        variants={overlayVariants}
+        onClick={onClose}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Create an Account</h2>
-          <button 
-            className="text-gray-500 hover:text-gray-700 text-2xl" 
-            onClick={onClose}
-          >
-            &times;
-          </button>
-        </div>
-        <p className="mb-4">To access this feature, you need to create an account or login.</p>
-        <div className="flex gap-3 justify-end">
-          <button 
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            onClick={handleRegister} // Call handleRegister directly
-          >
-            Register Now
-          </button>
-        </div>
-      </div>
-    </div>
+        <motion.div 
+          className="registration-popup-content"
+          variants={popupVariants}
+          onClick={handlePopupClick}
+        >
+          <div className="registration-popup-header">
+            <h2 className="registration-popup-title">Create an Account</h2>
+            <p className="registration-popup-subtitle">Join Swasthya Seva for complete healthcare access</p>
+            <button className="registration-popup-close" onClick={onClose}>
+              <CloseOutlined />
+            </button>
+          </div>
+          
+          <div className="registration-popup-body">
+            <p>To access premium features, you need to create an account:</p>
+            <ul className="registration-popup-features">
+              <li><span>✓</span> Book doctor appointments</li>
+              <li><span>✓</span> Schedule lab tests</li>
+              <li><span>✓</span> Access your medical records</li>
+              <li><span>✓</span> Get personalized health support</li>
+            </ul>
+            
+            <motion.button 
+              className="registration-popup-button registration-popup-button-primary"
+              onClick={handleRegister}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <UserOutlined className="registration-popup-icon" /> Register Now
+            </motion.button>
+          </div>
+          
+          <div className="registration-popup-footer">
+            <p>
+              By registering, you agree to our{' '}
+              <span className="registration-popup-link">Terms</span> and{' '}
+              <span className="registration-popup-link">Privacy Policy</span>
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

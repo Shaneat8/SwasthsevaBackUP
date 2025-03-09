@@ -60,7 +60,7 @@ function Register() {
         </div>
         <div className={styles.left}>
           <div className={styles.formContainer}>
-            <h2 className={styles.heading}>Swasthya Seva</h2>
+            <h2 className={styles.heading}><span className={styles.color1}>Swasthya</span> <span className={styles.color2}>Seva</span></h2>
             
             <Form layout="vertical" onFinish={onFinish} className={styles.registerForm}>
               <Form.Item
@@ -68,7 +68,7 @@ function Register() {
                 name="name"
                 rules={[{ required: true, message: "Please enter your name!" }]}
               >
-                <Input placeholder="Enter your name" />
+                <Input placeholder="Enter your name" size="large"/>
               </Form.Item>
 
               <Form.Item
@@ -76,7 +76,7 @@ function Register() {
                 name="email"
                 rules={[{ required: true, message: "Please enter your email!" }]}
               >
-                <Input type="email" placeholder="Enter your email" />
+                <Input type="email" placeholder="Enter your email" size="large"/>
               </Form.Item>
 
               <Form.Item
@@ -87,7 +87,7 @@ function Register() {
                   { pattern: /^[0-9]{10}$/, message: "Enter a valid phone number" },
                 ]}
               >
-                <Input placeholder="Enter your phone number" maxLength={10} />
+                <Input placeholder="Enter your phone number" maxLength={10} size="large"/>
               </Form.Item>
 
               <Form.Item
@@ -98,7 +98,7 @@ function Register() {
                   { min: 6, message: "Password must be at least 6 characters long" },
                 ]}
               >
-                <Input.Password placeholder="Enter your password" />
+                <Input.Password placeholder="Enter your password" size="large"/>
               </Form.Item>
               
               <Form.Item>
@@ -106,6 +106,7 @@ function Register() {
                   type="primary"
                   htmlType="submit"
                   block
+                  size="large"
                 >
                   Register
                 </Button>
@@ -113,7 +114,7 @@ function Register() {
 
               <div className={styles.alreadyAccount}>
                 Already have an account?{' '}
-                <Link to="/login" className="text-blue-500 hover:text-blue-600">
+                <Link to="/login" className={styles.loginLink}>
                   Login
                 </Link>
               </div>

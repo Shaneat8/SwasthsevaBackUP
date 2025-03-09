@@ -91,7 +91,7 @@ function Login() {
         </div>
         <div className={styles.right}>
           <div className={styles.formContainer}>
-            <h2 className={styles.heading}>Swasthya Seva</h2>
+            <h2 className={styles.heading}><span className={styles.color1}>Swasthya</span> <span className={styles.color2}>Seva</span></h2>
             
             <Form layout="vertical" onFinish={onFinish} className={styles.loginForm}>
               <Form.Item
@@ -102,6 +102,7 @@ function Login() {
                 <Input 
                   type="email" 
                   placeholder="Email or phone number"
+                  size="large"
                 />
               </Form.Item>
 
@@ -112,11 +113,12 @@ function Login() {
               >
                 <Input.Password 
                   placeholder="Enter password"
+                  size="large"
                 />
               </Form.Item>
 
               <div className={styles.linksContainer}>
-                <div className={styles.guest}>
+                <div className={styles.guest} style={{color: '#2e2929'}}>
                   <Link onClick={handleGuestLogin}>Continue as Guest</Link>
                 </div>
                 <div className={styles.forgotPassword}>
@@ -129,7 +131,8 @@ function Login() {
                   type="primary" 
                   htmlType="submit" 
                   block
-                  className="bg-blue-500 h-12 rounded-lg"
+                  size="large"
+                  className={styles.loginButton}
                 >
                   Login
                 </Button>
@@ -152,7 +155,7 @@ function Login() {
 
               <div className={styles.createAccount}>
                 Don't have an account?{' '}
-                <Link to="/register" className="text-blue-500 hover:text-blue-600">
+                <Link to="/register" className={styles.signupLink}>
                   Sign up now
                 </Link>
               </div>

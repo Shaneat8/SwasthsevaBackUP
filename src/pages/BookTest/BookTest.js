@@ -1,15 +1,4 @@
-import {
-  Button,
-  message,
-  Select,
-  Card,
-  Divider,
-  Modal,
-  Table,
-  DatePicker,
-  InputNumber,
-  Result,
-} from "antd";
+import { Button, message, Select, Card, Divider, Modal, Table, DatePicker, InputNumber, Result } from "antd";
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -18,18 +7,22 @@ import { BookLabTest, CheckAvailability } from "../../apicalls/booktest";
 import moment from "moment";
 import TextArea from "antd/es/input/TextArea";
 import { CheckProfileCompletion } from "../../apicalls/users";
-import {
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  CalendarOutlined,
-  UserOutlined,
+import { 
+  ClockCircleOutlined, 
+  CheckCircleOutlined, 
+  CloseCircleOutlined, 
+  CalendarOutlined, 
+  UserOutlined, 
   FileTextOutlined,
   MedicineBoxOutlined,
   DollarOutlined,
-} from "@ant-design/icons";
-import { collection, getDocs, query, where } from "firebase/firestore";
+  SyncOutlined,
+  ExperimentOutlined,
+  CheckOutlined
+} from '@ant-design/icons';
+import { collection, getDocs, query, where, onSnapshot } from "firebase/firestore";
 import firestoredb from "../../firebaseConfig";
+import "./BookTest.css"; // Import the CSS file
 
 const { Option } = Select;
 
@@ -44,11 +37,11 @@ function BookTest() {
   const [bookingComplete, setBookingComplete] = useState(false);
   const [userTests, setUserTests] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(null);
   const nav = useNavigate();
   const dispatch = useDispatch();
 
-  // Test catalog with details
+  // Test catalog with details and image paths - now with images
   const testCatalog = [
     {
       id: "cbc",
@@ -58,8 +51,8 @@ function BookTest() {
       discount: "29% OFF",
       fastingRequired: true,
       reportTime: 24,
-      description:
-        "Basic blood test that checks overall health and detects disorders",
+      description: "Basic blood test that checks overall health and detects disorders",
+      image: require("../images/blood_count.png") // Path to CBC test image
     },
     {
       id: "lft",
@@ -70,6 +63,7 @@ function BookTest() {
       fastingRequired: true,
       reportTime: 30,
       description: "Evaluates how well your liver is working",
+      image: require("../images/liver_function.png") // Path to LFT image
     },
     {
       id: "thyroid",
@@ -79,8 +73,8 @@ function BookTest() {
       discount: "25% OFF",
       fastingRequired: true,
       reportTime: 36,
-      description:
-        "Measures thyroid hormone levels to evaluate thyroid function",
+      description: "Measures thyroid hormone levels to evaluate thyroid function",
+      image: require("../images/thyroid.png") // Path to Thyroid test image
     },
     {
       id: "lipid",
@@ -90,8 +84,8 @@ function BookTest() {
       discount: "22% OFF",
       fastingRequired: true,
       reportTime: 24,
-      description:
-        "Measures blood cholesterol levels and other fatty substances",
+      description: "Measures blood cholesterol levels and other fatty substances",
+      image: require("../images/lipid_profile.png") // Path to Lipid test image
     },
     {
       id: "diabetes",
@@ -102,38 +96,91 @@ function BookTest() {
       fastingRequired: true,
       reportTime: 24,
       description: "Screens for diabetes and pre-diabetes conditions",
-    },
+      image: require("../images/diabetes_screening.png") // Path to Diabetes test image
+    }
   ];
 
-  // Fetch user profile data
-  const fetchUserProfile = useCallback( async (userId) => {
+  // Define fetchUserTests as a useCallback function to prevent recreation on each render
+  const fetchUserTests = useCallback(async (userId) => {
     try {
+      setLoading(true);
       dispatch(ShowLoader(true));
-
-      // Get user profile data from Firestore
+      
+      // Get all tests for the user (modified function to avoid index error)
       const q = query(
-        collection(firestoredb, "users"),
+        collection(firestoredb, "labTests"), 
         where("userId", "==", userId)
       );
-
+      
       const querySnapshot = await getDocs(q);
-      let userData = null;
-
+      const tests = [];
+      
       querySnapshot.forEach((doc) => {
-        userData = {
+        tests.push({
           id: doc.id,
-          ...doc.data(),
-        };
+          ...doc.data()
+        });
       });
-
+      
+      // Sort in memory instead of using orderBy in the query
+      tests.sort((a, b) => b.dateTimestamp.toMillis() - a.dateTimestamp.toMillis());
+      
+      // Limit to 10 most recent after sorting
+      const recentTests = tests.slice(0, 10);
+      
       dispatch(ShowLoader(false));
-      return userData;
+      setLoading(false);
+      setUserTests(recentTests);
+      setLastRefresh(new Date());
     } catch (error) {
       dispatch(ShowLoader(false));
-      message.error("Failed to fetch user profile. Please try again.");
-      return null;
+      setLoading(false);
+      message.error("Failed to fetch your tests. Please try again.");
     }
-  },[dispatch]);
+  }, [dispatch]);
+
+  // Set up real-time listener for updates to lab tests collection
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user?.id) return;
+    if(user.role === "guest"){
+      message.error("Please register before accessing");
+      nav('/');
+      return;
+    }
+
+    // Create a query against the collection
+    const q = query(
+      collection(firestoredb, "labTests"), 
+      where("userId", "==", user.id)
+    );
+
+    // Set up the snapshot listener
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const tests = [];
+      querySnapshot.forEach((doc) => {
+        tests.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      // Sort by date timestamp
+      tests.sort((a, b) => b.dateTimestamp.toMillis() - a.dateTimestamp.toMillis());
+      
+      // Limit to 10 most recent
+      const recentTests = tests.slice(0, 10);
+      
+      setUserTests(recentTests);
+      setLastRefresh(new Date());
+    }, (error) => {
+      console.error("Error in snapshot listener:", error);
+      message.error("Failed to update test status. Please refresh the page.");
+    });
+
+    // Clean up the listener when component unmounts
+    return () => unsubscribe();
+  }, [nav]);
 
   useEffect(() => {
     const checkProfileCompletion = async () => {
@@ -143,71 +190,19 @@ function BookTest() {
         nav("/login");
         return;
       }
-       if(user.role==="guest"){
-              message.error("Please register before accessing");
-              nav('/');
-              return;
-            }
 
       try {
         dispatch(ShowLoader(true));
+        // Use the imported CheckProfileCompletion function
         const result = await CheckProfileCompletion(user.id);
-
-        // Fetch user profile data
-        const profile = await fetchUserProfile(user.id);
-        setUserData(profile);
-
         dispatch(ShowLoader(false));
-
+        
         if (result.success) {
           if (!result.profileComplete) {
-            message.warning(
-              "Please complete your profile before booking a test."
-            );
+            message.warning("Please complete your profile before booking a test.");
             nav("/profile");
           } else {
-            // Define fetchUserTests inside the useEffect
-            const fetchUserTests = async (userId) => {
-              try {
-                setLoading(true);
-                dispatch(ShowLoader(true));
-
-                // Get all tests for the user (modified function to avoid index error)
-                const q = query(
-                  collection(firestoredb, "labTests"),
-                  where("userId", "==", userId)
-                );
-
-                const querySnapshot = await getDocs(q);
-                const tests = [];
-
-                querySnapshot.forEach((doc) => {
-                  tests.push({
-                    id: doc.id,
-                    ...doc.data(),
-                  });
-                });
-
-                // Sort in memory instead of using orderBy in the query
-                tests.sort(
-                  (a, b) =>
-                    b.dateTimestamp.toMillis() - a.dateTimestamp.toMillis()
-                );
-
-                // Limit to 10 most recent after sorting
-                const recentTests = tests.slice(0, 10);
-
-                dispatch(ShowLoader(false));
-                setLoading(false);
-                setUserTests(recentTests);
-              } catch (error) {
-                dispatch(ShowLoader(false));
-                setLoading(false);
-                message.error("Failed to fetch your tests. Please try again.");
-              }
-            };
-
-            // Call the inner function
+            // Initial fetch of tests
             fetchUserTests(user.id);
           }
         } else {
@@ -220,56 +215,16 @@ function BookTest() {
     };
 
     checkProfileCompletion();
-  }, [nav, dispatch,fetchUserProfile]);
-
-  // Define fetchUserTests at component level for use in other functions
-  const fetchUserTests = async (userId) => {
-    try {
-      setLoading(true);
-      dispatch(ShowLoader(true));
-
-      // Get all tests for the user (modified function to avoid index error)
-      const q = query(
-        collection(firestoredb, "labTests"),
-        where("userId", "==", userId)
-      );
-
-      const querySnapshot = await getDocs(q);
-      const tests = [];
-
-      querySnapshot.forEach((doc) => {
-        tests.push({
-          id: doc.id,
-          ...doc.data(),
-        });
-      });
-
-      // Sort in memory instead of using orderBy in the query
-      tests.sort(
-        (a, b) => b.dateTimestamp.toMillis() - a.dateTimestamp.toMillis()
-      );
-
-      // Limit to 10 most recent after sorting
-      const recentTests = tests.slice(0, 10);
-
-      dispatch(ShowLoader(false));
-      setLoading(false);
-      setUserTests(recentTests);
-    } catch (error) {
-      dispatch(ShowLoader(false));
-      setLoading(false);
-      message.error("Failed to fetch your tests. Please try again.");
-    }
-  };
+  }, [nav, dispatch, fetchUserTests]);
 
   const getAvailableSlots = async (selectedDate) => {
     try {
       dispatch(ShowLoader(true));
       const response = await CheckAvailability(selectedDate);
       dispatch(ShowLoader(false));
-
+      
       if (response.success) {
-        setAvailableSlots(response.data);
+        setAvailableSlots(response.data || []);
       } else {
         message.error(response.message);
       }
@@ -318,27 +273,14 @@ function BookTest() {
 
     try {
       dispatch(ShowLoader(true));
-
+      
       const user = JSON.parse(localStorage.getItem("user"));
-      const testDetails = testCatalog.find((test) => test.id === selectedTest);
-
-      // Format full name from FirstName and LastName
-      const fullName = userData
-        ? `${userData.FirstName || ""} ${userData.LastName || ""}`.trim()
-        : user.name;
-
-      // Create payload with user details for admin
+      const testDetails = testCatalog.find(test => test.id === selectedTest);
+      
       const payload = {
         userId: user.id,
         userEmail: user.email,
-        userName: fullName,
-        // Add user details for admin
-        userGender: userData?.gender || null, // 1=male, 2=female
-        userDOB: userData?.DOB || null, // Pass DOB directly to allow age calculation in API
-        userPhone: userData?.phone || null,
-        userAddress: userData?.address || null,
-        userPincode: userData?.pincode || null,
-        // Test details
+        userName: user.name,
         testId: selectedTest,
         testName: testDetails.name,
         price: testDetails.discountedPrice,
@@ -351,27 +293,30 @@ function BookTest() {
         bookedOn: moment().format("DD-MM-YYYY hh:mm A"),
         status: "pending",
         paymentStatus: "pending",
+        dateTimestamp: new Date(), // Important: add this to ensure proper sorting
+        totalPrice: testDetails.discountedPrice * numPatients, // Add calculated total price
+        testImage: testDetails.image // Save the image path for future reference
       };
 
       const response = await BookLabTest(payload);
       dispatch(ShowLoader(false));
-
+      
       if (response.success) {
         setIsModalVisible(false);
         message.success({
           content: "Test booked successfully!",
           duration: 5,
-          icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />
         });
         setBookingComplete(true);
-
-        // Refresh user tests
+        
+        // Refresh user tests - not strictly needed with real-time listener, but good as a fallback
         fetchUserTests(user.id);
       } else {
         message.error({
           content: response.message,
           duration: 5,
-          icon: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
         });
       }
     } catch (error) {
@@ -379,44 +324,49 @@ function BookTest() {
       message.error({
         content: "Failed to book test. Please try again.",
         duration: 5,
-        icon: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
       });
     }
   };
 
-  // Generate time slots for selection
+  // Manually refresh tests
+  const handleManualRefresh = () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user?.id) {
+      fetchUserTests(user.id);
+      message.info("Refreshing your tests...");
+    }
+  };
+
+  // Generate time slots for selection - FIXED VERSION
   const generateTimeSlots = () => {
-    const slots = [
-      "07:00 AM",
-      "08:00 AM",
-      "09:00 AM",
-      "10:00 AM",
-      "11:00 AM",
-      "12:00 PM",
-      "01:00 PM",
-      "02:00 PM",
-      "03:00 PM",
-      "04:00 PM",
-      "05:00 PM",
-      "06:00 PM",
-    ];
-
-    return slots.map((slot) => {
-      const isBooked = availableSlots.some(
-        (bookedSlot) =>
-          bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
+    const slots = ["07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM", 
+                   "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", 
+                   "05:00 PM", "06:00 PM"];
+    
+    // Fix: Handle the case when availableSlots is undefined
+    const bookedSlots = availableSlots || [];
+    
+    return slots.map(slot => {
+      // Fix: Check if the slot exists in bookedSlots
+      const isBooked = bookedSlots.some(
+        bookedSlot => bookedSlot.slot === slot && bookedSlot.status !== "cancelled"
       );
-
+      
       // Check if the slot is in the past for the current date
-      const isCurrentDate = moment(date).isSame(moment(), "day");
+      const isCurrentDate = moment(date, "YYYY-MM-DD").isSame(moment(), "day");
       const slotTime = moment(slot, "hh:mm A");
       const currentTime = moment();
       const isPastSlot = isCurrentDate && slotTime.isBefore(currentTime);
 
       const disabled = isBooked || isPastSlot;
-
+      
       return (
-        <Option key={slot} value={slot} disabled={disabled}>
+        <Option 
+          key={slot} 
+          value={slot} 
+          disabled={disabled}
+        >
           {slot} {disabled ? "(Unavailable)" : ""}
         </Option>
       );
@@ -426,52 +376,64 @@ function BookTest() {
   // Table columns for user tests
   const testColumns = [
     {
-      title: "Test Name",
-      dataIndex: "testName",
-      key: "testName",
+      title: 'Test Name',
+      dataIndex: 'testName',
+      key: 'testName',
+      render: (testName, record) => (
+        <div className="test-name-with-icon">
+          {record.testImage ? (
+            <img 
+              src={record.testImage} 
+              alt={testName} 
+              className="test-table-icon"
+              onError={(e) => {
+                e.target.onerror = null; 
+                e.target.src = "/images/lab-tests/default-test.jpg";
+              }}
+            />
+          ) : (
+            <ExperimentOutlined className="test-table-icon-fallback" />
+          )}
+          <span>{testName}</span>
+        </div>
+      )
     },
     {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
-      render: (date) => moment(date).format("DD MMM YYYY"),
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      render: (date) => moment(date, "YYYY-MM-DD").format('DD MMM YYYY')
     },
     {
-      title: "Time",
-      dataIndex: "timeSlot",
-      key: "timeSlot",
+      title: 'Time',
+      dataIndex: 'timeSlot',
+      key: 'timeSlot',
     },
     {
-      title: "Patients",
-      dataIndex: "numPatients",
-      key: "numPatients",
+      title: 'Patients',
+      dataIndex: 'numPatients',
+      key: 'numPatients',
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
       render: (status) => (
-        <span
-          style={{
-            color:
-              status === "pending"
-                ? "#faad14"
-                : status === "completed"
-                ? "#52c41a"
-                : "#ff4d4f",
-            fontWeight: "bold",
-          }}
-        >
+        <span className={`status-${status}`}>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
-      ),
+      )
     },
     {
-      title: "Total Price",
-      dataIndex: "totalPrice",
-      key: "totalPrice",
-      render: (price) => `₹${price}`,
-    },
+      title: 'Total Price',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
+      render: (price, record) => {
+        // Use totalPrice if it exists, otherwise calculate it
+        const totalPrice = price || (record.price * record.numPatients);
+        return `₹${totalPrice}`;
+      }
+    }
   ];
 
   // Reset the booking state
@@ -484,104 +446,145 @@ function BookTest() {
     setBookingComplete(false);
   };
 
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">
-        <MedicineBoxOutlined style={{ marginRight: 8 }} />
-        Book Your Lab Test
-      </h1>
+  // Function to get the selected test details
+  const getSelectedTestDetails = () => {
+    return testCatalog.find(test => test.id === selectedTest) || {};
+  };
 
+  return (
+    <div className="lab-container">
+      <h1 className="lab-title">
+        <ExperimentOutlined className="lab-title-icon" />
+        <span className="Title">Book Your Lab Test</span>
+      </h1>
+      
       {bookingComplete ? (
         <Result
           status="success"
           title="Test Booked Successfully!"
           subTitle="Your lab test has been booked. You will receive a confirmation shortly."
           extra={[
-            <Button
-              type="primary"
-              key="console"
-              onClick={() => nav("/profile?tab=lab-tests")}
-            >
+            <Button type="primary" key="console" onClick={handleBookAnother} className="book-button">
               View My Tests
             </Button>,
-            <Button key="buy" onClick={handleBookAnother}>
-              Book Another Test
-            </Button>,
+            <Button key="buy" onClick={handleBookAnother}>Book Another Test</Button>,
           ]}
+          className="success-result"
         />
       ) : (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="lab-grid">
           {/* User's tests table */}
           {userTests.length > 0 && (
-            <Card title="Your Recent Tests" className="mb-6">
-              <Table
-                dataSource={userTests}
-                columns={testColumns}
+            <Card 
+              title={
+                <div className="card-title-with-icon">
+                  <ClockCircleOutlined className="card-title-icon" />
+                  <span>Your Recent Tests</span>
+                </div>
+              }
+              className="recent-tests-card"
+              extra={
+                <div className="refresh-container">
+                  <Button 
+                    icon={<SyncOutlined />} 
+                    onClick={handleManualRefresh} 
+                    size="small"
+                    className="refresh-button"
+                  >
+                    Refresh
+                  </Button>
+                  {lastRefresh && (
+                    <span className="refresh-time">
+                      Last updated: {moment(lastRefresh).format('hh:mm:ss A')}
+                    </span>
+                  )}
+                </div>
+              }
+            >
+              <Table 
+                dataSource={userTests} 
+                columns={testColumns} 
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 5 }}
+                className="lab-table"
               />
             </Card>
           )}
-
+          
+          {/* Test catalog header */}
+          <div className="catalog-header">
+            <h2>
+              <MedicineBoxOutlined className="catalog-header-icon" />
+              Available Tests
+            </h2>
+            <p>Select a test from our comprehensive catalog to book your appointment</p>
+          </div>
+          
           {/* Test catalog */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="lab-catalog">
             {testCatalog.map((test) => (
-              <Card
+              <Card 
                 key={test.id}
-                className="border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                className="test-card"
                 hoverable
-              >
-                <div>
-                  <h2 className="text-xl font-semibold">{test.name}</h2>
-                  <p className="text-gray-600 text-sm mt-1">
-                    {test.description}
-                  </p>
-
-                  <Divider className="my-3" />
-
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <DollarOutlined style={{ marginRight: 4 }} />
-                      <span className="text-xl font-bold">
-                        ₹{test.discountedPrice}
-                      </span>
-                      <span className="text-gray-500 line-through ml-2">
-                        ₹{test.price}
-                      </span>
-                    </div>
-                    <span className="text-green-600 text-sm">
-                      {test.discount}
-                    </span>
+                cover={
+                  <div className="test-image-container">
+                    <img 
+                      alt={test.name}
+                      src={test.image}
+                      className="test-image"
+                      onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.src = "/images/lab-tests/default-test.jpg";
+                      }}
+                    />
+                    {test.fastingRequired && (
+                      <div className="fasting-badge">
+                        <CheckOutlined /> Fasting Required
+                      </div>
+                    )}
                   </div>
-
-                  <div className="mt-3 flex justify-between text-sm">
-                    <div className="flex items-center">
+                }
+              >
+                <div className="test-card-content">
+                  <h2 className="test-name">{test.name}</h2>
+                  <p className="test-description">{test.description}</p>
+                  
+                  <Divider className="test-divider" />
+                  
+                  <div className="price-container">
+                    <div className="price-display">
+                      <DollarOutlined style={{ marginRight: 4 }} />
+                      <span className="price-current">₹{test.discountedPrice}</span>
+                      <span className="price-original">₹{test.price}</span>
+                    </div>
+                    <span className="price-discount">{test.discount}</span>
+                  </div>
+                  
+                  <div className="test-info">
+                    <div className="fasting-info">
                       {test.fastingRequired ? (
                         <>
-                          <CloseCircleOutlined
-                            style={{ color: "#ff4d4f", marginRight: 4 }}
-                          />
-                          <span className="mr-1">Fasting required</span>
+                          <CheckOutlined style={{ color: '#16a34a', marginRight: 4 }} />
+                          <span className="fasting-required">Yes, fasting required</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircleOutlined
-                            style={{ color: "#52c41a", marginRight: 4 }}
-                          />
-                          <span className="mr-1">No fasting required</span>
+                          <CheckCircleOutlined style={{ color: '#2ecc71', marginRight: 4 }} />
+                          <span className="fasting-not-required">No fasting required</span>
                         </>
                       )}
                     </div>
-                    <div className="flex items-center">
+                    <div className="report-time">
                       <ClockCircleOutlined style={{ marginRight: 4 }} />
                       <span>Reports in {test.reportTime} Hrs</span>
                     </div>
                   </div>
 
-                  <Button
+                  <Button 
                     type="primary"
-                    className="mt-4 w-full bg-green-500 hover:bg-green-600"
+                    className="book-button"
                     onClick={() => handleTestSelection(test.id)}
                   >
                     Book Now
@@ -592,90 +595,112 @@ function BookTest() {
           </div>
         </div>
       )}
-
+      
       {/* Comprehensive booking modal */}
       <Modal
-        title={`Book ${
-          testCatalog.find((test) => test.id === selectedTest)?.name
-        }`}
-        visible={isModalVisible}
+        bodyStyle={{ maxHeight: 'calc(80vh - 110px)', overflow: 'auto' }}
+        title={
+          <div className="modal-title">
+            <ExperimentOutlined className="modal-title-icon" />
+            <span>Book {getSelectedTestDetails().name}</span>
+          </div>
+        }
+        open={isModalVisible}
         onCancel={handleModalCancel}
         footer={[
           <Button key="back" onClick={handleModalCancel}>
             Cancel
           </Button>,
-          <Button
-            key="submit"
-            type="primary"
+          <Button 
+            key="submit" 
+            type="primary" 
             onClick={handleBookTest}
             disabled={!timeSlot || !date}
+            className="book-button"
           >
             Book Now
           </Button>,
         ]}
         width={700}
+        centered
+        className="booking-modal" // This class name is important for our styling
       >
-        <div className="p-3 mb-4 bg-blue-50 rounded-md">
-          <FileTextOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-          <span className="text-sm">
-            {selectedTest &&
-            testCatalog.find((test) => test.id === selectedTest)
-              ?.fastingRequired ? (
-              <strong className="text-red-500">Fasting is required</strong>
+        {selectedTest && (
+          <div className="modal-test-preview">
+            <img 
+              src={getSelectedTestDetails().image} 
+              alt={getSelectedTestDetails().name} 
+              className="modal-test-image"
+              onError={(e) => {
+                e.target.onerror = null; 
+                e.target.src = "/images/lab-tests/default-test.jpg";
+              }}
+            />
+            <div className="modal-test-details">
+              <h3 className="modal-test-name">{getSelectedTestDetails().name}</h3>
+              <p className="modal-test-description">{getSelectedTestDetails().description}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="info-alert">
+          <FileTextOutlined />
+          <span className="info-text">
+            {selectedTest && getSelectedTestDetails().fastingRequired ? (
+              <strong className="fasting-alert-required">
+                <CheckOutlined style={{ marginRight: 4 }} /> Yes, fasting required
+              </strong>
             ) : (
-              <strong className="text-green-500">No fasting required</strong>
+              <strong className="fasting-alert-not-required">No fasting required</strong>
             )}
-            {selectedTest &&
-              " for this test. Reports will be available in " +
-                testCatalog.find((test) => test.id === selectedTest)
-                  ?.reportTime +
-                " hours."}
+            {selectedTest && " for this test. Reports will be available in " + getSelectedTestDetails().reportTime + " hours."}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="booking-form">
           {/* Left column - Date and patients */}
           <div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                <CalendarOutlined style={{ marginRight: 8 }} />
+            <div className="form-group">
+              <label className="form-label">
+                <CalendarOutlined />
                 Select Date
               </label>
-              <DatePicker
-                className="w-full"
+              <DatePicker 
+                className="custom-date-picker" 
                 onChange={handleDateChange}
                 disabledDate={(current) => {
                   // Can't select days before today
-                  return current && current < moment().startOf("day");
+                  return current && current < moment().startOf('day');
                 }}
+                placeholder="Select date"
               />
             </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                <UserOutlined style={{ marginRight: 8 }} />
+            
+            <div className="form-group">
+              <label className="form-label">
+                <UserOutlined />
                 Number of Patients
               </label>
               <InputNumber
                 min={1}
                 max={5}
                 defaultValue={1}
-                onChange={(value) => setNumPatients(value)}
-                className="w-full"
+                onChange={value => setNumPatients(value)}
+                className="custom-input-number"
               />
             </div>
           </div>
-
+          
           {/* Right column - Time slot and notes */}
           <div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                <ClockCircleOutlined style={{ marginRight: 8 }} />
+            <div className="form-group">
+              <label className="form-label">
+                <ClockCircleOutlined />
                 Select Time Slot
               </label>
               <Select
-                className="w-full"
-                placeholder="Select a time slot"
+                className="custom-select"
+                placeholder="Select time slot"
                 value={timeSlot}
                 onChange={(value) => setTimeSlot(value)}
                 disabled={!date}
@@ -683,10 +708,10 @@ function BookTest() {
                 {generateTimeSlots()}
               </Select>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                <FileTextOutlined style={{ marginRight: 8 }} />
+            
+            <div className="form-group">
+              <label className="form-label">
+                <FileTextOutlined />
                 Additional Notes (Optional)
               </label>
               <TextArea
@@ -694,36 +719,24 @@ function BookTest() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Any specific requirements or medical conditions"
+                className="custom-textarea"
               />
             </div>
           </div>
         </div>
-
+        
         {/* Price summary */}
-        {selectedTest && date && timeSlot && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-md">
-            <h3 className="font-medium">Price Summary</h3>
-            <div className="flex justify-between mt-2">
-              <span>
-                {testCatalog.find((test) => test.id === selectedTest)?.name}
-              </span>
-              <span>
-                ₹
-                {
-                  testCatalog.find((test) => test.id === selectedTest)
-                    ?.discountedPrice
-                }{" "}
-                x {numPatients}
-              </span>
+        {selectedTest && (
+          <div className="price-summary">
+            <h3 className="price-summary-title">Price Summary</h3>
+            <div className="price-item">
+              <span>{getSelectedTestDetails().name}</span>
+              <span>₹{getSelectedTestDetails().discountedPrice} x {numPatients}</span>
             </div>
-            <Divider className="my-2" />
-            <div className="flex justify-between font-bold">
+            <Divider className="price-divider" />
+            <div className="price-total">
               <span>Total Amount</span>
-              <span>
-                ₹
-                {testCatalog.find((test) => test.id === selectedTest)
-                  ?.discountedPrice * numPatients}
-              </span>
+              <span>₹{getSelectedTestDetails().discountedPrice * numPatients}</span>
             </div>
           </div>
         )}

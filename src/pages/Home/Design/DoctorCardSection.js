@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { message } from "antd";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom"; // Import useNavigate hook
+import { useNavigate } from "react-router-dom";
 import styles from "./DoctorCardSection.module.css";
-import {GetAllDoctors} from "../../../apicalls/doctors";
-import {ShowLoader} from "../../../redux/loaderSlice";
+import { GetAllDoctors } from "../../../apicalls/doctors";
+import { ShowLoader } from "../../../redux/loaderSlice";
 
 const DoctorCardSection = () => {
   const [doctors, setDoctors] = useState([]);
@@ -12,15 +12,26 @@ const DoctorCardSection = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState("All Experts");
   const dispatch = useDispatch();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+
+  // Calculate number of doctors to show per view
+  const itemsPerView = 4;
+
+  // Get visible doctors (utility function needed early)
+  const getVisibleDoctors = useCallback((doctorsList) => {
+    if (!doctorsList || !doctorsList.length) return [];
+    
+    const startIndex = activeIndex * itemsPerView;
+    const endIndex = Math.min(startIndex + itemsPerView, doctorsList.length);
+    return doctorsList.slice(startIndex, endIndex);
+  }, [activeIndex]);
 
   // Get all doctor data
   const getData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
       const response = await GetAllDoctors();
-      dispatch(ShowLoader(false));
-
+      
       if (response.success) {
         const approvedDoctors = response.data.filter(
           (doctor) => doctor.status === "approved"
@@ -28,8 +39,8 @@ const DoctorCardSection = () => {
         // Assign a consistent imageIndex to each doctor when data is first loaded
         const doctorsWithImageIndex = approvedDoctors.map((doctor, index) => ({
           ...doctor,
-          imageIndex: index % 5 + 1, // Assign a consistent image index (1-5)
-          gradientIndex: index % 5   // Assign a consistent gradient index (0-4)
+          imageIndex: index % 5 + 1,
+          gradientIndex: index % 5
         }));
         
         setDoctors(doctorsWithImageIndex);
@@ -39,16 +50,15 @@ const DoctorCardSection = () => {
       }
     } catch (error) {
       message.error(error.message);
+    } finally {
       dispatch(ShowLoader(false));
     }
-  }, [dispatch]);
+  }, [dispatch, setDoctors, setFilteredDoctors]);
 
+  // Initial data load
   useEffect(() => {
     getData();
   }, [getData]);
-
-  // Calculate number of doctors to show per view
-  const itemsPerView = 4;
 
   // Calculate total number of pages
   const totalPages = Math.ceil(filteredDoctors.length / itemsPerView);
@@ -62,16 +72,6 @@ const DoctorCardSection = () => {
     setActiveIndex((prevIndex) =>
       prevIndex === 0 ? Math.max(totalPages - 1, 0) : prevIndex - 1
     );
-  };
-
-  // Get only the visible doctors for the current page
-  const getVisibleDoctors = () => {
-    const startIndex = activeIndex * itemsPerView;
-    const endIndex = Math.min(
-      startIndex + itemsPerView,
-      filteredDoctors.length
-    );
-    return filteredDoctors.slice(startIndex, endIndex);
   };
 
   // Handle specialty filter
@@ -102,20 +102,21 @@ const DoctorCardSection = () => {
     return Array.from(specialties);
   };
 
-  // Get doctor's image based on the doctor's assigned imageIndex
+  // Get doctor's image
   const getDoctorImage = (doctor) => {
     try {
-      // Use the doctor's consistent imageIndex instead of position in filtered array
-      return require(`./doctor_image/placeholder-doctor${doctor.imageIndex}.png`);
+      // Check if doctor has a photoUrl from their profile
+      if (doctor.photoUrl) {
+        return doctor.photoUrl;
+      }
     } catch (error) {
-      // Fallback to a specific placeholder if the import fails
-      return require('./doctor_image/placeholder-doctor1.png');
+      message.error("Error loading doctor image");
     }
   };
 
   // Get gradient color based on the doctor's assigned gradientIndex
   const getGradientColor = (doctor) => {
-    // Array of different gradient combinations like in the screenshot
+    // Array of different gradient combinations
     const gradients = [
       'linear-gradient(to bottom, rgba(232, 244, 248, 0) 50%, rgba(62, 198, 224, 0.2) 60%, rgba(62, 198, 224, 0.7) 100%)',  // Blue
       'linear-gradient(to bottom, rgba(249, 232, 232, 0) 50%, rgba(229, 115, 115, 0.2) 60%, rgba(229, 115, 115, 0.7) 100%)',  // Red
@@ -124,7 +125,7 @@ const DoctorCardSection = () => {
       'linear-gradient(to bottom, rgba(250, 240, 230, 0) 50%, rgba(255, 183, 77, 0.2) 60%, rgba(255, 183, 77, 0.7) 100%)'    // Orange
     ];
     
-    // Use doctor's consistent gradientIndex instead of position in filtered array
+    // Use doctor's consistent gradientIndex
     return gradients[doctor.gradientIndex];
   };
 
@@ -168,29 +169,37 @@ const DoctorCardSection = () => {
       ) : (
         <>
           <div className={styles.doctorCardsContainer}>
-            {getVisibleDoctors().map((doctor, index) => {
+            {getVisibleDoctors(filteredDoctors).map((doctor, index) => {
               return (
                 <div 
                   key={doctor._id || doctor.id || index}
                   className={styles.doctorCard}
-                  onClick={() => handleDoctorClick(doctor)} // Add onClick handler
-                  style={{ cursor: 'pointer' }} // Add pointer cursor for better UX
+                  onClick={() => handleDoctorClick(doctor)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  {/* Image container with gradient overlay */}
+                  {/* Background container with light blue background */}
                   <div 
-                    className={styles.doctorImageContainer}
-                    style={{
-                      backgroundImage: `url(${getDoctorImage(doctor)})`,
-                      backgroundColor:"#dbe3ee",
-                    }}
+                    className={styles.doctorBackgroundContainer}
+                    style={{ backgroundColor: "#dbe3ee" }}  
                   >
-                    {/* Gradient overlay */}
+                    {/* Doctor image */}
                     <div 
-                      className={styles.gradientOverlay}
+                      className={styles.doctorImageContainer}
                       style={{
-                        background: getGradientColor(doctor),
+                        backgroundImage: `url(${getDoctorImage(doctor)})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center top",
+                        backgroundRepeat: "no-repeat"
                       }}
-                    ></div>
+                    >
+                      {/* Gradient overlay */}
+                      <div 
+                        className={styles.gradientOverlay}
+                        style={{
+                          background: getGradientColor(doctor),
+                        }}
+                      ></div>
+                    </div>
                   </div>
                   
                   {/* Text overlay directly on the image */}

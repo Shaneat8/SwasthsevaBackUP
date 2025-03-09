@@ -1,4 +1,4 @@
-import { Button, Col, Form, Input, message, Radio, Row, Upload } from "antd";
+import { Button, Col, Form, Input, message, Modal, Radio, Row, Upload } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { ShowLoader } from "../../redux/loaderSlice";
@@ -7,15 +7,22 @@ import {
   CheckIfDetailsAlreadyFilled,
   UpdateUserData,
 } from "../../apicalls/users";
-import { PlusOutlined, LoadingOutlined } from "@ant-design/icons";
+import { PlusOutlined, LoadingOutlined, UserOutlined, HomeOutlined } from "@ant-design/icons";
+import ImgCrop from "antd-img-crop";
+import styles from './UserForm.module.css';
 
 function UserForm() {
   const [userform] = Form.useForm();
   const [alreadyFilled, setAlreadyFilled] = useState(false);
+  const [fileList, setFileList] = useState([]);
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [previewTitle, setPreviewTitle] = useState('');
   const dispatch = useDispatch();
 
+  // Keep all the existing functions unchanged
   const getUserFromStorage = () => {
     try {
       const userData = localStorage.getItem("user");
@@ -40,7 +47,7 @@ function UserForm() {
       message.error('You can only upload JPG/PNG files!');
       return false;
     }
-    const isLt2M = file.size / 1024 / 1024 < 1; // Reduced to 1MB since we're storing in Firestore
+    const isLt2M = file.size / 1024 / 1024 < 1; 
     if (!isLt2M) {
       message.error('Image must be smaller than 1MB!');
       return false;
@@ -54,18 +61,39 @@ function UserForm() {
     reader.readAsDataURL(img);
   };
 
-  const handleChange = (info) => {
-    if (info.file.status === 'uploading') {
+  const handleChange = ({ fileList: newFileList, file }) => {
+    setFileList(newFileList);
+
+    if (file.status === 'uploading') {
       setLoading(true);
       return;
     }
-    if (info.file.status === 'done') {
-      getBase64(info.file.originFileObj, (url) => {
+    if (file.status === 'done') {
+      getBase64(file.originFileObj, (url) => {
         setLoading(false);
         setImageUrl(url);
+        setFileList([
+          {
+            uid: '-1',
+            name: file.name,
+            status: 'done',
+            url: url,
+          }
+        ]);
       });
     }
   };
+
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj);
+    }
+    setPreviewImage(file.url || file.preview);
+    setPreviewOpen(true);
+    setPreviewTitle(file.name || file.url.substring(file.url.lastIndexOf('/') + 1));
+  };
+
+  const handlePreviewCancel = () => setPreviewOpen(false);
 
   const customRequest = ({ file, onSuccess }) => {
     setTimeout(() => {
@@ -86,16 +114,16 @@ function UserForm() {
       dispatch(ShowLoader(true));
 
       // Sanitize the payload to replace undefined fields with null or empty string
-    const sanitizedValues = Object.keys(values).reduce((acc, key) => {
-      acc[key] = values[key] === undefined ? null : values[key];
-      return acc;
-    }, {});
+      const sanitizedValues = Object.keys(values).reduce((acc, key) => {
+        acc[key] = values[key] === undefined ? null : values[key];
+        return acc;
+      }, {});
 
       const payload = {
-        ...sanitizedValues, // Use sanitized values
+        ...sanitizedValues,
         userId: user.id,
         details: alreadyFilled ? "filled" : "not filled",
-        photoUrl: imageUrl // This will now be the Base64 string
+        photoUrl: imageUrl
       };
 
       let response = null;
@@ -119,7 +147,7 @@ function UserForm() {
   };
 
   // Fetch user data on mount
-  const fetchUserData = useCallback( async () => {
+  const fetchUserData = useCallback(async () => {
     const user = getUserFromStorage();
     
     if (!user?.id) {
@@ -134,7 +162,18 @@ function UserForm() {
       if (response.success) {
         if (response.data) {
           setAlreadyFilled(true);
-          setImageUrl(response.data.photoUrl || '');
+          // Set image URL and fileList if photo exists
+          if (response.data.photoUrl) {
+            setImageUrl(response.data.photoUrl);
+            setFileList([
+              {
+                uid: '-1',
+                name: 'image.png',
+                status: 'done',
+                url: response.data.photoUrl,
+              }
+            ]);
+          }
           userform.setFieldsValue(response.data);
         }
       }
@@ -143,221 +182,230 @@ function UserForm() {
       dispatch(ShowLoader(false));
       message.error("Failed to fetch details. Please try again.");
     }
-  },[dispatch,userform])
+  }, [dispatch, userform]);
 
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
 
   return (
-    <div className="bg-white p-2">
-      <Form
-        onFinish={onFinish}
-        form={userform}
-        layout="vertical"
-      >
-        <Row gutter={[16, 16]}>
-          {/* Header */}
-          <Col xs={24}>
-            <h4 className="uppercase font-bold mb-4">Personal Details</h4>
-          </Col>
+    <div className={styles['user-profile-wrapper']}>
+      <div className={styles['user-profile-container']}>
+        <h2 className={styles['user-profile-title']}>User Profile</h2>
+        
+        <Form
+          onFinish={onFinish}
+          form={userform}
+          layout="vertical"
+          className={styles['user-form']}
+        >
+          {/* Personal Details Section */}
+          <h4 className={styles['user-form-section-header']}>
+            <UserOutlined style={{ marginRight: '8px' }} /> Personal Details
+          </h4>
+          
+          <Row gutter={[24, 16]} className={styles['user-form-row']}>
+            {/* Left Side Fields */}
+            <Col xs={24} md={16}>
+              <Row gutter={[24, 16]}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="First Name"
+                    name="FirstName"
+                    rules={[{ required: true, message: "Required" }]}
+                  >
+                    <Input placeholder="Enter your first name" />
+                  </Form.Item>
+                </Col>
 
-          {/* Left Side Fields (First Name, Last Name, Email, DOB) */}
-          <Col xs={24} md={16}>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  label="First Name"
-                  name="FirstName"
-                  rules={[{ required: true, message: "Required" }]}
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Last Name"
+                    name="LastName"
+                    rules={[{ required: true, message: "Required" }]}
+                  >
+                    <Input placeholder="Enter your last name" />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Email"
+                    name="email"
+                    rules={[
+                      { required: true, message: "Required" },
+                      { type: "email", message: "Enter a valid email" }
+                    ]}
+                  >
+                    <Input placeholder="Enter your email" />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Date of Birth"
+                    name="DOB"
+                    rules={[{ required: true, message: "Required" }]}
+                  >
+                    <Input type="date" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Col>
+
+            {/* Right Side Image Upload */}
+            <Col xs={24} md={8}>
+              <div className={styles['user-form-image-upload-container']}>
+                <ImgCrop rotationSlider>
+                  <Upload
+                    name="avatar"
+                    listType="picture-card"
+                    className={styles['user-form-avatar-uploader']}
+                    fileList={fileList}
+                    beforeUpload={beforeUpload}
+                    onPreview={handlePreview}
+                    onChange={handleChange}
+                    customRequest={customRequest}
+                  >
+                    {fileList.length >= 1 ? null : uploadButton}
+                  </Upload>
+                </ImgCrop>
+                
+                <Modal
+                  open={previewOpen}
+                  title={previewTitle}
+                  footer={null}
+                  onCancel={handlePreviewCancel}
                 >
-                  <Input placeholder="Enter your first name" />
-                </Form.Item>
-              </Col>
+                  <img 
+                    alt="preview" 
+                    style={{ width: '100%' }} 
+                    src={previewImage} 
+                  />
+                </Modal>
+              </div>
+            </Col>
+          </Row>
 
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  label="Last Name"
-                  name="LastName"
-                  rules={[{ required: true, message: "Required" }]}
-                >
-                  <Input placeholder="Enter your last name" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  label="Email"
-                  name="email"
-                  rules={[
-                    { required: true, message: "Required" },
-                    { type: "email", message: "Enter a valid email" }
-                  ]}
-                >
-                  <Input placeholder="Enter your email" />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  label="Date of Birth"
-                  name="DOB"
-                  rules={[{ required: true, message: "Required" }]}
-                >
-                  <Input type="date" />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Col>
-
-          {/* Right Side Image Upload */}
-          <Col xs={24} md={8}>
-            <div className="flex justify-center items-start">
-              <Upload
-                name="avatar"
-                listType="picture-card"
-                className="avatar-uploader"
-                showUploadList={false}
-                beforeUpload={beforeUpload}
-                onChange={handleChange}
-                customRequest={customRequest}
+          {/* Contact Information */}
+          <Row gutter={[24, 16]} className={styles['user-form-row']}>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Phone"
+                name="phone"
+                rules={[
+                  { required: true, message: "Required" },
+                  { pattern: /^[0-9]{10}$/, message: "Enter a valid phone number" }
+                ]}
               >
-                {imageUrl ? (
-                  <div className="relative w-32 h-38">
-                 <img 
-                    src={imageUrl} 
-                    alt="avatar" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  /> 
-                  <p>Click to Change (Max:1MB)</p>
-                  </div>     
-                ) : (
-                  uploadButton
-                )}
-              </Upload>
-            </div>
-          </Col>
+                <Input placeholder="Enter your phone number" maxLength={10} />
+              </Form.Item>
+            </Col>
 
-          {/* Remaining Fields */}
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
-              label="Phone"
-              name="phone"
-              rules={[
-                { required: true, message: "Required" },
-                { pattern: /^[0-9]{10}$/, message: "Enter a valid phone number" }
-              ]}
-            >
-              <Input placeholder="Enter your phone number" maxLength={10} />
-            </Form.Item>
-          </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Gender"
+                name="gender"
+                rules={[{ required: true, message: "Required" }]}
+              >
+                <Radio.Group>
+                  <Radio value={1}>Male</Radio>
+                  <Radio value={2}>Female</Radio>
+                  <Radio value={3}>Other</Radio>
+                </Radio.Group>
+              </Form.Item>
+            </Col>
 
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
-              label="Gender"
-              name="gender"
-              rules={[{ required: true, message: "Required" }]}
-            >
-              <Radio.Group>
-                <Radio value={1}>Male</Radio>
-                <Radio value={2}>Female</Radio>
-                <Radio value={3}>Other</Radio>
-              </Radio.Group>
-            </Form.Item>
-          </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Pincode"
+                name="pincode"
+                rules={[
+                  { required: true, message: "Required" },
+                  { pattern: /^\d{6}$/, message: "Enter a valid pincode" }
+                ]}
+              >
+                <Input placeholder="Enter your pincode" maxLength={6}/>
+              </Form.Item>
+            </Col>
 
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
-              label="Pincode"
-              name="pincode"
-              rules={[
-                { required: true, message: "Required" },
-                { pattern: /^\d{6}$/, message: "Enter a valid pincode" }
-              ]}
-            >
-              <Input placeholder="Enter your pincode" maxLength={6}/>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24}>
-            <Form.Item
-              label="Address"
-              name="address"
-              rules={[{ required: true, message: "Required" }]}
-            >
-              <Input.TextArea rows={3} placeholder="Enter your address" />
-            </Form.Item>
-          </Col>
+            <Col xs={24}>
+              <Form.Item
+                label="Address"
+                name="address"
+                rules={[{ required: true, message: "Required" }]}
+              >
+                <Input.TextArea rows={3} placeholder="Enter your address" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           {/* Guardian Details Section */}
-          <Col xs={24}>
-            <h4 className="uppercase font-bold mt-4 mb-4">Guardian Details</h4>
-          </Col>
+          <h4 className={styles['user-form-section-header-with-margin']}>
+            <HomeOutlined style={{ marginRight: '8px' }} /> Guardian Details
+          </h4>
+          
+          <Row gutter={[24, 16]} className={styles['user-form-row']}>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Guardian Name"
+                name="gName"
+              >
+                <Input placeholder="Enter guardian's full name" />
+              </Form.Item>
+            </Col>
 
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
-              label="Guardian Name"
-              name="gName"
-            >
-              <Input placeholder="Enter guardian's full name" />
-            </Form.Item>
-          </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Guardian Contact"
+                name="gPhone"
+                rules={[
+                  { pattern: /^\d{10,15}$/, message: "Enter a valid phone number" }
+                ]}
+              >
+                <Input placeholder="Enter guardian's phone number" />
+              </Form.Item>
+            </Col>
 
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
-              label="Guardian Contact"
-              name="gPhone"
-              rules={[
-                { pattern: /^\d{10,15}$/, message: "Enter a valid phone number" }
-              ]}
-            >
-              <Input placeholder="Enter guardian's phone number" />
-            </Form.Item>
-          </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Guardian Pincode"
+                name="gPincode"
+                rules={[
+                  { pattern: /^\d{6}$/, message: "Enter a valid Pin Code" }
+                ]}
+              >
+                <Input placeholder="Enter guardian's pincode" maxLength={6}/>
+              </Form.Item>
+            </Col>
 
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
-              label="Guardian Pincode"
-              name="gPincode"
-              rules={[
-                { pattern: /^\d{6}$/, message: "Enter a valid Pin Code" }
-              ]}
-            >
-              <Input placeholder="Enter guardian's pincode" maxLength={6}/>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24}>
-            <Form.Item
-              label="Guardian Address"
-              name="gAddress"
-            >
-              <Input.TextArea rows={3} placeholder="Enter guardian's address" />
-            </Form.Item>
-          </Col>
+            <Col xs={24}>
+              <Form.Item
+                label="Guardian Address"
+                name="gAddress"
+              >
+                <Input.TextArea rows={3} placeholder="Enter guardian's address" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           {/* Submit Buttons */}
-          <Col xs={24}>
-            <div className="flex justify-end gap-2">
-            <Button htmlType="button" color="default" variant="outlined" style={{borderRadius:'0', fontSize:'15px'}}>CANCEL</Button>
-            <Button htmlType="submit" color="default" variant="solid" style={{borderRadius:'0', fontSize:'15px'}}>UPDATE DETAILS</Button>
-            </div>
-          </Col>
-        </Row>
-      </Form>
-
-      <style jsx>{`
-        .avatar-uploader .ant-upload {
-          width: 130px !important;
-          height: 180px !important;
-        }
-        .ant-upload-select-picture-card:hover {
-          border-color: #1890ff;
-        }
-        .ant-form-item {
-          margin-bottom: 16px;
-        }
-      `}</style>
+          <div className={styles['user-form-button-container']}>
+            <Button 
+              htmlType="button" 
+              className={`${styles['user-form-button']} ${styles['user-form-button-cancel']}`}
+            >
+              CANCEL
+            </Button>
+            <Button 
+              htmlType="submit" 
+              className={`${styles['user-form-button']} ${styles['user-form-button-submit']}`}
+            >
+              UPDATE DETAILS
+            </Button>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 }

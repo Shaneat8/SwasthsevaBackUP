@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import styles from "./HeroSlider.module.css";
+import styles from "./Slider.module.css";
 import gsap from "gsap";
 
 const HeroSlider = () => {

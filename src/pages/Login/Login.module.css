@@ -10,8 +10,6 @@
   /* background-color: #f5f5f5; */
   background-image: url('../images/lbg.png');
   background-size: 100% 100%;
-  
-  
 }
 
 .part {
@@ -86,13 +84,12 @@
   z-index: 1;
 }
 
-/* Rest of your styles remain the same */
 .heading {
   font-size: 35px;
   font-weight: 700;
   color: #1a1a1a;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .loginForm {
@@ -112,8 +109,14 @@
   margin: -10px 0 20px; /* Adjust margin as needed */
 }
 
-.guest {
+.guest a{
   text-align: left;
+  color:#2e2929;
+  font-weight: bold;
+}
+
+.guest a:hover{
+  color:#2563eb;
 }
 
 .forgotPassword {
@@ -121,9 +124,10 @@
 }
 
 .forgotPassword a {
-  color: #3b82f6;
+  color: #2e2929;
   font-size: 14px;
   text-decoration: none;
+  font-weight: bold;
 }
 
 .forgotPassword a:hover {
@@ -182,6 +186,28 @@
   color: #6b7280;
 }
 
+/* Added styles to replace Tailwind classes */
+.loginButton {
+  background-color: #3b82f6 !important;
+  height: 48px !important;
+  border-radius: 8px !important;
+  border: none !important;
+}
+
+.loginButton:hover {
+  background-color: #2563eb !important;
+}
+
+.signupLink {
+  color: #2e2929;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.signupLink:hover {
+  color: #2563eb;
+}
+
 .loginForm :global(.ant-btn-primary) {
   background: #3b82f6;
   border: none;
@@ -201,3 +227,10 @@
   text-align: left;
 }
 
+.color1{
+  color: #5c2e7e;;
+}
+
+.color2{
+  color: #8bbccc;
+}
