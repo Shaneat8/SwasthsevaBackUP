@@ -370,7 +370,7 @@ function Prescription() {
       {/* Header */}
       <div className="header" style={{ position: "relative" }}>
         <h1>Patient Details</h1>
-        <h2>OPD Receipt - Polyclinic</h2>
+        <h2><b>Swasthya Seva</b> </h2>
         <Button
           type="primary"
           icon={<FolderOutlined />}

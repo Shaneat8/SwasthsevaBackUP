@@ -30,6 +30,7 @@ function ProtectedRoute({ children }) {
     if (location.pathname === "/") return "0";
     if (location.pathname === "/profile") {
       if (tab === "appointments") return "1";
+      if (tab=== "myAppointments") return 1-0;
       if (tab === "doctor") return "1-1";
       if (tab === "labtest") return "1-2";
       if (tab === "records") return "2";
@@ -38,6 +39,7 @@ function ProtectedRoute({ children }) {
       if (tab === "support") return "5-1";
       if (tab === "tickets") return "5-2";
     }
+
     if (location.pathname === "/book-doctor") return "1-1";
     if (location.pathname === "/book-lab") return "1-2";
     
@@ -126,6 +128,7 @@ function ProtectedRoute({ children }) {
     switch(e.key) {
       case "0": navigate("/"); break;
       case "1": navigate("/profile?tab=appointments"); break;
+      case "1-0": navigate("/appointment"); break;
       case "1-1": navigate("/book-doctor"); break;
       case "1-2": navigate("/book-test"); break;
       case "2": navigate("/profile?tab=records"); break;
@@ -191,6 +194,7 @@ function ProtectedRoute({ children }) {
                 icon={<CalendarOutlined />}
                 title="Appointments"
               >
+                <Menu.Item key ="1-0">My Appointments</Menu.Item>
                 <Menu.Item key="1-1">Book Doctor Appointment</Menu.Item>
                 <Menu.Item key="1-2">Book Lab Test</Menu.Item>
               </Menu.SubMenu>

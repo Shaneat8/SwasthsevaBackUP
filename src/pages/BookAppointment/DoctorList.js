@@ -18,26 +18,10 @@ import {
 } from "@ant-design/icons";
 import "./doctor-list.css";
 
-// Import your doctor images here
-import doctor1 from "../Home/Design/doctor_image/placeholder-doctor1.png";
-import doctor2 from "../Home/Design/doctor_image/placeholder-doctor2.png";
-import doctor3 from "../Home/Design/doctor_image/placeholder-doctor3.png";
-import doctor4 from "../Home/Design/doctor_image/placeholder-doctor4.png";
-import doctor5 from "../Home/Design/doctor_image/placeholder-doctor5.png";
-
-// Create an array to easily access the imported images
-const doctorImages = [doctor1, doctor2, doctor3, doctor4, doctor5];
-
 const { TabPane } = Tabs;
 
 // Doctor Card Component
 const DoctorCard = ({ doctor, onClick, toggleFavorite, isFavorite }) => {
-  // Get doctor image
-  const getDoctorImage = (doctor) => {
-    const imageIndex = (doctor.imageIndex || doctor.id % 5) - 1;
-    return doctorImages[imageIndex >= 0 && imageIndex < 5 ? imageIndex : 0];
-  };
-
   // Get gradient color based on index
   const getGradientColor = (doctor) => {
     const gradients = [
@@ -66,7 +50,7 @@ const DoctorCard = ({ doctor, onClick, toggleFavorite, isFavorite }) => {
       transition={{ duration: 0.3 }}
       onClick={onClick}
     >
-      <div className="doctor-image-container" style={{ backgroundImage: `url(${doctor.profileImage || getDoctorImage(doctor)})` }}>
+      <div className="doctor-image-container" style={{ backgroundImage: `url(${doctor.photoUrl})` }}>
         <div className="doctor-gradient-overlay" style={{ background: getGradientColor(doctor) }}></div>
         <div className="favorite-btn" onClick={handleFavoriteClick}>
           {isFavorite ? 
@@ -171,12 +155,11 @@ const DoctorList = () => {
 
   // Load favorites from localStorage
   useEffect(() => {
-     if(user.role==="guest"){
-            message.error("Please register before accessing");
-            navigate('/');
-            return;
-          }
-
+    if(user.role==="guest"){
+          message.error("Please register before accessing");
+          navigate('/');
+          return;
+        }
     const savedFavorites = localStorage.getItem('favoriteDoctors');
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
@@ -209,14 +192,13 @@ const DoctorList = () => {
           (doctor) => doctor.status === "approved"
         );
         
-        // Add image and gradient indices to each doctor
-        const doctorsWithImageIndex = approvedDoctors.map((doctor, index) => ({
+        // Add gradient indices to each doctor
+        const doctorsWithIndices = approvedDoctors.map((doctor, index) => ({
           ...doctor,
-          imageIndex: index % 5 + 1, // Assign a consistent image index (1-5)
           gradientIndex: index % 5   // Assign a consistent gradient index (0-4)
         }));
         
-        setDoctors(doctorsWithImageIndex);
+        setDoctors(doctorsWithIndices);
       } else {
         message.error(response.message);
       }

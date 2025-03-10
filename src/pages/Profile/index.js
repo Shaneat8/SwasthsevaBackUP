@@ -1,9 +1,12 @@
 import React from "react";
-import { Button, Card, message } from "antd";
+import { message } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 
 // Import components lazily to improve initial load time
-const Appointments = React.lazy(() => import("./Appointments"));
+// Import components lazily to improve initial load time
+const AppointmentManagement = React.lazy(() => import("./Appointments").then(module => ({ 
+  default: module.AppointmentManagement 
+})));
 const Doctor = React.lazy(() => import("../DoctorForm"));
 const UserForm = React.lazy(() => import("./UserForm"));
 const Records = React.lazy(() => import("./records"));
@@ -41,31 +44,9 @@ function Profile() {
     switch(tab) {
       case "appointments":
         return (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Appointment Management</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <Card 
-                title="Book Doctor Appointment" 
-                className="shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate("/")}
-              >
-                <p>Schedule an appointment with one of our qualified doctors</p>
-                <Button type="primary" className="mt-4">Book Now</Button>
-              </Card>
-              
-              <Card 
-                title="Book Lab Test" 
-                className="shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate("/profile?tab=booktest")}
-              >
-                <p>Schedule laboratory tests and diagnostics</p>
-                <Button type="primary" className="mt-4">Book Lab Test</Button>
-              </Card>
+            <div>
+              <AppointmentManagement />
             </div>
-            
-            <h3 className="text-xl font-bold mb-4">Your Upcoming Appointments</h3>
-            <Appointments />
-          </div>
         );
       case "profile":
         return (
