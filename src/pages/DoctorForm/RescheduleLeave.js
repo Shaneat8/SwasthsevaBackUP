@@ -57,7 +57,7 @@ const RescheduleLeaveHandler = () => {
           }
           
           // For reschedule, redirect to booking page with prefilled data
-          navigate(`/book-appointment /${appointment.doctorId}`, { 
+          navigate(`/book-appointment/${appointment.doctorId}`, { 
             state: { 
               isRescheduling: true,
               fromLeave: true,
