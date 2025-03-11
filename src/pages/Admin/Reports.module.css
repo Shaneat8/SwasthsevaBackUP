@@ -1,0 +1,139 @@
+/* Reports.module.css */
+
+/* General Styles */
+.container {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+  }
+  
+  .heading {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    color: #1a365d;
+  }
+  
+  .card {
+    margin-bottom: 1.5rem;
+  }
+  
+  .grid {
+    display: grid;
+    gap: 1rem;
+  }
+  
+  .gridCols1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  
+  @media (min-width: 768px) {
+    .mdGridCols2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  .label {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    color: #2d3748;
+  }
+  
+  .select {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .datePicker {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .divider {
+    margin: 1rem 0;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+  
+  .button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .buttonExcel {
+    background-color: #22c55e; /* green-500 */
+    color: white;
+  }
+  
+  .buttonExcel:hover {
+    background-color: #16a34a; /* green-600 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .buttonPDF {
+    background-color: #ef4444; /* red-500 */
+    color: white;
+  }
+  
+  .buttonPDF:hover {
+    background-color: #dc2626; /* red-600 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Improved Details Section */
+  .details {
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #3b82f6;
+  }
+  
+  .detailsHeading {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1e40af;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 0.5rem;
+  }
+  
+  .detailsText {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+    color: #334155;
+    display: flex;
+    align-items: baseline;
+  }
+  
+  .detailsText strong {
+    color: #1e3a8a;
+    margin-right: 0.5rem;
+    min-width: 140px;
+    font-weight: 600;
+    display: inline-block;
+  }
+  
+  @media (max-width: 640px) {
+    .detailsText {
+        flex-direction: column;
+        margin-bottom: 1rem;
+    }
+    
+    .detailsText strong {
+        margin-bottom: 0.25rem;
+    }
+  }

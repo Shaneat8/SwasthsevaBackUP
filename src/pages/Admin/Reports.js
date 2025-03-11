@@ -8,6 +8,8 @@ import firestoredb from '../../firebaseConfig';
 import { getMedicineList } from '../../apicalls/medicine';
 import { getAllFeedback } from "../../apicalls/feedback";
 import { generateExcelReport, downloadExcelFile, generatePDFReport, downloadPDFFile } from '../../apicalls/reportGenerator'; 
+import styles from './Reports.module.css'; // Import CSS Module
+
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -47,147 +49,24 @@ const Reports = () => {
         case 'medicines':
           const medicinesResponse = await getMedicineList();
           if (medicinesResponse.success) {
-            // Transform medicine data to match expected format - make sure all fields are included
             data = medicinesResponse.data.map(medicine => {
-              // Safely handle date formatting for expiryDate
               let expiryDateString = '';
-              
               try {
-                // Add debug logging to see what format the expiryDate is in
-                console.log(`Processing medicine: ${medicine.medicineName}, expiryDate: ${medicine.expiryDate}, type: ${typeof medicine.expiryDate}`);
-                
-                // Handle DD-MM-YY format from getMedicineList function
                 if (typeof medicine.expiryDate === 'string' && medicine.expiryDate.match(/^\d{2}-\d{2}-\d{2}$/)) {
                   const [day, month, year] = medicine.expiryDate.split('-');
-                  // Convert YY to YYYY by prepending '20'
                   const date = new Date(`20${year}-${month}-${day}`);
                   if (!isNaN(date.getTime())) {
                     expiryDateString = date.toISOString().split('T')[0];
-                  } else {
-                    throw new Error("Invalid date after parsing DD-MM-YY format");
                   }
-                }
-                // Handle Timestamp object from Firestore
-                else if (medicine.expiryDate instanceof Timestamp) {
+                } else if (medicine.expiryDate instanceof Timestamp) {
                   expiryDateString = medicine.expiryDate.toDate().toISOString().split('T')[0];
-                }
-                // Handle when expiryDate has toDate function
-                else if (medicine.expiryDate && typeof medicine.expiryDate.toDate === 'function') {
-                  expiryDateString = medicine.expiryDate.toDate().toISOString().split('T')[0];
-                }
-                // Handle Firestore timestamp format with _seconds
-                else if (medicine.expiryDate && medicine.expiryDate._seconds) {
-                  const date = new Date(medicine.expiryDate._seconds * 1000);
-                  expiryDateString = date.toISOString().split('T')[0];
-                }
-                // Handle Firestore timestamp format with seconds
-                else if (medicine.expiryDate && medicine.expiryDate.seconds) {
-                  const date = new Date(medicine.expiryDate.seconds * 1000);
-                  expiryDateString = date.toISOString().split('T')[0];
-                }
-                // Handle ISO string or other standard date string
-                else if (medicine.expiryDate && typeof medicine.expiryDate === 'string') {
-                  const date = new Date(medicine.expiryDate);
-                  if (!isNaN(date.getTime())) {
-                    expiryDateString = date.toISOString().split('T')[0];
-                  } else {
-                    throw new Error("Invalid date string format");
-                  }
-                }
-                // Last resort - try direct date parsing
-                else if (medicine.expiryDate) {
-                  const date = new Date(medicine.expiryDate);
-                  if (!isNaN(date.getTime())) {
-                    expiryDateString = date.toISOString().split('T')[0];
-                  } else {
-                    throw new Error("Invalid date format");
-                  }
                 }
               } catch (error) {
                 console.error(`Error formatting expiryDate for ${medicine.medicineName}:`, error);
                 expiryDateString = "Invalid Date";
               }
 
-              // Safely handle DOM timestamp
-              let domString = '';
-              try {
-                // Handle DD-MM-YY format for DOM
-                if (typeof medicine.DOM === 'string' && medicine.DOM.match(/^\d{2}-\d{2}-\d{2}$/)) {
-                  const [day, month, year] = medicine.DOM.split('-');
-                  const date = new Date(`20${year}-${month}-${day}`);
-                  if (!isNaN(date.getTime())) {
-                    domString = date.toISOString().split('T')[0];
-                  } else {
-                    throw new Error("Invalid date after parsing DD-MM-YY format");
-                  }
-                }
-                // Handle Timestamp object
-                else if (medicine.DOM instanceof Timestamp) {
-                  domString = medicine.DOM.toDate().toISOString().split('T')[0];
-                }
-                // Handle when DOM has toDate function
-                else if (medicine.DOM && typeof medicine.DOM.toDate === 'function') {
-                  domString = medicine.DOM.toDate().toISOString().split('T')[0];
-                }
-                // Handle Firestore timestamp with _seconds
-                else if (medicine.DOM && medicine.DOM._seconds) {
-                  const date = new Date(medicine.DOM._seconds * 1000);
-                  domString = date.toISOString().split('T')[0];
-                }
-                // Handle Firestore timestamp with seconds
-                else if (medicine.DOM && medicine.DOM.seconds) {
-                  const date = new Date(medicine.DOM.seconds * 1000);
-                  domString = date.toISOString().split('T')[0];
-                }
-                // Handle ISO string or other standard date string
-                else if (medicine.DOM && typeof medicine.DOM === 'string') {
-                  const date = new Date(medicine.DOM);
-                  if (!isNaN(date.getTime())) {
-                    domString = date.toISOString().split('T')[0];
-                  } else {
-                    throw new Error("Invalid DOM string format");
-                  }
-                }
-                // Last resort
-                else if (medicine.DOM) {
-                  const date = new Date(medicine.DOM);
-                  if (!isNaN(date.getTime())) {
-                    domString = date.toISOString().split('T')[0];
-                  } else {
-                    throw new Error("Invalid DOM format");
-                  }
-                }
-              } catch (error) {
-                console.error(`Error formatting DOM for ${medicine.medicineName}:`, error);
-                domString = "Invalid Date";
-              }
-
-              // Safely handle timestamp
-              let timestampString = null;
-              try {
-                if (medicine.timestamp instanceof Timestamp) {
-                  timestampString = medicine.timestamp.toDate().toISOString();
-                } else if (medicine.timestamp && typeof medicine.timestamp.toDate === 'function') {
-                  timestampString = medicine.timestamp.toDate().toISOString();
-                } else if (medicine.timestamp && medicine.timestamp._seconds) {
-                  const date = new Date(medicine.timestamp._seconds * 1000);
-                  timestampString = date.toISOString();
-                } else if (medicine.timestamp && medicine.timestamp.seconds) {
-                  const date = new Date(medicine.timestamp.seconds * 1000);
-                  timestampString = date.toISOString();
-                } else if (medicine.timestamp) {
-                  const date = new Date(medicine.timestamp);
-                  if (!isNaN(date.getTime())) {
-                    timestampString = date.toISOString();
-                  }
-                }
-              } catch (error) {
-                console.error(`Error formatting timestamp for ${medicine.medicineName}:`, error);
-                timestampString = "Invalid Date";
-              }
-
               return {
-                // All fields for Excel report
                 id: medicine.medicineId || '',
                 name: medicine.medicineName || '',
                 description: medicine.description || '',
@@ -195,9 +74,6 @@ const Reports = () => {
                 stock: medicine.quantity || 0,
                 quantity: medicine.quantity || 0,
                 expiryDate: expiryDateString,
-                dom: domString,
-                adminId: medicine.adminId || '',
-                timestamp: timestampString
               };
             });
           } else {
@@ -207,8 +83,6 @@ const Reports = () => {
           
         case 'complaints':
           let ticketsQuery = query(collection(firestoredb, 'tickets'));
-          
-          // Apply date filter if present
           if (startDate && endDate) {
             ticketsQuery = query(
               collection(firestoredb, 'tickets'),
@@ -216,33 +90,28 @@ const Reports = () => {
               where('createdAt', '<=', Timestamp.fromDate(endDate.toDate()))
             );
           }
-          
           const ticketsSnapshot = await getDocs(ticketsQuery);
-          data = ticketsSnapshot.docs.map(doc => {
-            const ticketData = doc.data();
-            
-            return {
-              ID: doc.id || '',
-              "Ticket ID": ticketData.ticketId || doc.id || '',
-              "Title": ticketData.title || ticketData.subject || '',
-              "Description": ticketData.description || '',
-              "Status": ticketData.status || '',
-              "Priority": ticketData.priority || 'Normal',
-              "Created At": ticketData.createdAt ? 
-                (ticketData.createdAt.toDate ? 
-                  ticketData.createdAt.toDate().toLocaleDateString('en-GB') : 
-                  new Date(ticketData.createdAt).toLocaleDateString('en-GB')
-                ) : '',
-              "Last Updated": ticketData.lastUpdated ? 
-                (ticketData.lastUpdated.toDate ? 
-                  ticketData.lastUpdated.toDate().toLocaleDateString('en-GB') : 
-                  new Date(ticketData.lastUpdated).toLocaleDateString('en-GB')
-                ) : '',
-              "User ID": ticketData.userId || ticketData.email || '',
-              "Query Type": ticketData.queryType || '',
-              "Is Resolved": ticketData.isResolved ? 'Yes' : 'No'
-            };
-          });
+          data = ticketsSnapshot.docs.map(doc => ({
+            ID: doc.id || '',
+            "Ticket ID": doc.data().ticketId || doc.id || '',
+            "Title": doc.data().title || doc.data().subject || '',
+            "Description": doc.data().description || '',
+            "Status": doc.data().status || '',
+            "Priority": doc.data().priority || 'Normal',
+            "Created At": doc.data().createdAt ? 
+              (doc.data().createdAt.toDate ? 
+                doc.data().createdAt.toDate().toLocaleDateString('en-GB') : 
+                new Date(doc.data().createdAt).toLocaleDateString('en-GB')
+              ) : '',
+            "Last Updated": doc.data().lastUpdated ? 
+              (doc.data().lastUpdated.toDate ? 
+                doc.data().lastUpdated.toDate().toLocaleDateString('en-GB') : 
+                new Date(doc.data().lastUpdated).toLocaleDateString('en-GB')
+              ) : '',
+            "User ID": doc.data().userId || doc.data().email || '',
+            "Query Type": doc.data().queryType || '',
+            "Is Resolved": doc.data().isResolved ? 'Yes' : 'No'
+          }));
           break;
           
         case 'feedback':
@@ -288,19 +157,18 @@ const Reports = () => {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-6">Generate Reports</h2>
+    <div className={styles.container}>
+      <h2 className={styles.heading}>Generate Reports</h2>
       
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card className={styles.card}>
+        <div className={`${styles.grid} ${styles.gridCols1} ${styles.mdGridCols2}`}>
           <div>
-            <h3 className="text-lg font-medium mb-3">Report Type</h3>
+            <h3 className={styles.label}>Report Type</h3>
             <Select
-              style={{ width: '100%' }}
+              className={styles.select}
               placeholder="Select report type"
               value={reportType}
               onChange={setReportType}
-              className="mb-4"
             >
               <Option value="patients">Patients Report</Option>
               <Option value="doctors">Doctors Report</Option>
@@ -311,24 +179,23 @@ const Reports = () => {
           </div>
           
           <div>
-            <h3 className="text-lg font-medium mb-3">Date Range (Optional)</h3>
+            <h3 className={styles.label}>Date Range (Optional)</h3>
             <RangePicker 
-              style={{ width: '100%' }}
+              className={styles.datePicker}
               onChange={setDateRange}
-              className="mb-4"
             />
           </div>
         </div>
         
-        <Divider />
+        <Divider className={styles.divider} />
         
-        <div className="flex justify-end space-x-4">
+        <div className={styles.buttonGroup}>
           <Button 
             type="primary"
             icon={<DownloadOutlined />}
             loading={loading}
             onClick={() => generateReport('excel')}
-            className="bg-green-500 hover:bg-green-600"
+            className={`${styles.button} ${styles.buttonExcel}`}
           >
             Generate Excel Report
           </Button>
@@ -337,28 +204,28 @@ const Reports = () => {
             icon={<FilePdfOutlined />}
             loading={loading}
             onClick={() => generateReport('pdf')}
-            className="bg-red-500 hover:bg-red-600"
+            className={`${styles.button} ${styles.buttonPDF}`}
           >
             Generate PDF Report
           </Button>
         </div>
       </Card>
       
-      <div className="text-gray-600">
-        <h3 className="text-lg font-medium mb-2">Report Details</h3>
-        <p className="mb-1">
+      <div className={styles.details}>
+        <h3 className={styles.detailsHeading}>Report Details</h3>
+        <p className={styles.detailsText}>
           <strong>Patients Report:</strong> Includes user information (name, email) for all patients.
         </p>
-        <p className="mb-1">
+        <p className={styles.detailsText}>
           <strong>Doctors Report:</strong> Includes all doctor information (name, specialty, status).
         </p>
-        <p className="mb-1">
+        <p className={styles.detailsText}>
           <strong>Medicines Report:</strong> Includes medicine details (ID, name, stock, expiry date).
         </p>
-        <p className="mb-1">
+        <p className={styles.detailsText}>
           <strong>Complaints Report:</strong> Includes all tickets with ID, title, description, status, priority, and dates.
         </p>
-        <p className="mb-1">
+        <p className={styles.detailsText}>
           <strong>Feedback Report:</strong> Includes all user feedback with ratings, comments, and submission dates.
         </p>
       </div>

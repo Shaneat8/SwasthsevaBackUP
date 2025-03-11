@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import styles from "./Slider.module.css";
-import gsap from "gsap";
+import "./Slider.css";
 
 const HeroSlider = () => {
   const navigate = useNavigate();
-  const sliderRef = useRef(null);
-  
+  const carouselRef = useRef(null);
+  const runningTimeRef = useRef(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const slides = [
     {
       id: 1,
-      title: "Find the Right Doctor",
+      title: "SLIDER",
+      name: "Find the Right Doctor",
       description: "Connect with experienced specialists who can address your health concerns with personalized care.",
       icon: "👨‍⚕️",
       color: "blue",
@@ -19,7 +21,8 @@ const HeroSlider = () => {
     },
     {
       id: 2,
-      title: "Book Appointments Easily",
+      title: "SLIDER",
+      name: "Book Appointments Easily",
       description: "Schedule your consultation in seconds with our intuitive appointment booking system.",
       icon: "📅",
       color: "green",
@@ -28,159 +31,219 @@ const HeroSlider = () => {
     },
     {
       id: 3,
-      title: "Access Medical Records",
+      title: "SLIDER",
+      name: "Access Medical Records",
       description: "Keep all your health information in one secure place for better continuity of care.",
       icon: "📋",
       color: "purple",
       action: () => navigate("/medical-records"),
-      imagePath: "/images/medical-records.jpg"
+      imagePath: require("../../images/doc1.png")
     },
     {
       id: 4,
-      title: "Register as a Doctor",
+      title: "SLIDER",
+      name: "Register as a Doctor",
       description: "Join our platform as a healthcare provider and connect with patients seeking your expertise.",
       icon: "🩺",
       color: "orange",
       action: () => navigate("/doctor"),
-      imagePath: "/images/doctor-registration.jpg"
+      imagePath: require("../../images/doc1.png")
     }
   ];
 
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const slidesRef = useRef(slides);
+  const initialItemsRef = useRef([...slides, ...slides, ...slides, ...slides]);
+  const [items, setItems] = useState(initialItemsRef.current);
 
-  // Auto-scroll functionality
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [slides.length]);
+  const slideTransitionTime = 1000;
+  const timeAutoNext = 6000;
 
-  // GSAP Animations
-  useEffect(() => {
-    if (sliderRef.current) {
-      // Slide content animation
-      gsap.fromTo(
-        `.${styles.slideContent}`,
-        { 
-          opacity: 0, 
-          y: 50,
-          scale: 0.9
-        },
-        { 
-          opacity: 1, 
-          y: 0,
-          scale: 1,
-          duration: 1,
-          ease: "power3.out"
-        }
-      );
+  const runTimeOutRef = useRef(null);
+  const runNextAutoRef = useRef(null);
+  const contentAnimTimeoutRef = useRef(null);
+  const isInitialMount = useRef(true);
 
-      // Background image animation
-      gsap.fromTo(
-        `.${styles.slideImageContainer}`,
-        { 
-          opacity: 0, 
-          scale: 1.2
-        },
-        { 
-          opacity: 1, 
-          scale: 1,
-          duration: 1.5,
-          ease: "power3.out"
-        }
-      );
+  const resetTimeAnimation = useCallback(() => {
+    if (runningTimeRef.current) {
+      runningTimeRef.current.style.animation = 'none';
+      void runningTimeRef.current.offsetHeight;
+      runningTimeRef.current.style.animation = `runningTime ${timeAutoNext / 1000}s linear forwards`;
     }
-  }, [currentSlide]);
+  }, [timeAutoNext]);
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
+  const resetAnimationState = useCallback(() => {
+    if (carouselRef.current) {
+      carouselRef.current.classList.remove('next');
+      carouselRef.current.classList.remove('prev');
+    }
+  }, []);
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
+  const triggerContentAnimations = useCallback(() => {
+    const activeContent = document.querySelector('.list .item:nth-child(2) .content');
+    if (activeContent) {
+      const elements = activeContent.querySelectorAll('.title, .name, .des, .btn');
+      elements.forEach((el, i) => {
+        el.style.animation = 'none';
+        void el.offsetHeight;
+        el.style.animation = `fadeInContent 0.5s ease-out ${0.1 * (i + 1)}s forwards`;
+      });
+    }
+  }, []);
 
-  const goToSlide = (index) => {
-    setCurrentSlide(index);
-  };
+  useEffect(() => {
+    const currentSlides = slidesRef.current;
+    currentSlides.forEach(slide => {
+      if (typeof slide.imagePath === 'string') {
+        const img = new Image();
+        img.src = slide.imagePath;
+      }
+    });
+  }, []);
 
-  const handleLearnMore = (slide) => {
+  const showSlider = useCallback((type) => {
+    if (!carouselRef.current || isAnimating) return;
+
+    setIsAnimating(true);
+    clearTimeout(contentAnimTimeoutRef.current);
+
+    if (type === 'next') {
+      carouselRef.current.classList.add('next');
+    } else {
+      carouselRef.current.classList.add('prev');
+    }
+
+    clearTimeout(runTimeOutRef.current);
+    runTimeOutRef.current = setTimeout(() => {
+      const newItems = [...items];
+
+      if (type === 'next') {
+        const firstItem = newItems.shift();
+        newItems.push(firstItem);
+      } else {
+        const lastItem = newItems.pop();
+        newItems.unshift(lastItem);
+      }
+
+      resetAnimationState();
+      setItems(newItems);
+
+      contentAnimTimeoutRef.current = setTimeout(() => {
+        triggerContentAnimations();
+        setIsAnimating(false);
+      }, 100);
+    }, slideTransitionTime);
+
+    clearTimeout(runNextAutoRef.current);
+    runNextAutoRef.current = setTimeout(() => {
+      showSlider('next');
+    }, timeAutoNext);
+
+    resetTimeAnimation();
+  }, [isAnimating, items, resetAnimationState, resetTimeAnimation, slideTransitionTime, timeAutoNext, triggerContentAnimations]);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      resetTimeAnimation();
+      triggerContentAnimations();
+
+      runNextAutoRef.current = setTimeout(() => {
+        showSlider('next');
+      }, timeAutoNext);
+    }
+
+    return () => {
+      clearTimeout(runTimeOutRef.current);
+      clearTimeout(runNextAutoRef.current);
+      clearTimeout(contentAnimTimeoutRef.current);
+    };
+  }, [resetTimeAnimation, showSlider, timeAutoNext, triggerContentAnimations]);
+
+  const handleNext = useCallback(() => {
+    if (!isAnimating) {
+      clearTimeout(runNextAutoRef.current);
+      showSlider('next');
+    }
+  }, [isAnimating, showSlider]);
+
+  const handlePrev = useCallback(() => {
+    if (!isAnimating) {
+      clearTimeout(runNextAutoRef.current);
+      showSlider('prev');
+    }
+  }, [isAnimating, showSlider]);
+
+  const handleLearnMore = useCallback((slide) => {
     if (slide.action) {
       slide.action();
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const checkCarouselState = () => {
+      if (carouselRef.current &&
+        (carouselRef.current.classList.contains('next') ||
+          carouselRef.current.classList.contains('prev'))) {
+        resetAnimationState();
+      }
+    };
+
+    const intervalId = setInterval(checkCarouselState, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [resetAnimationState]);
 
   return (
-    <div className={styles.sliderContainer} ref={sliderRef}>
-      <div className={styles.sliderHeaderWrapper}>
-        <h1 className={styles.sliderHeader}>Swasthya Seva Healthcare Platform</h1>
-        <p className={styles.sliderSubheader}>
-          Transforming how you experience healthcare
-        </p>
-      </div>
-
-      <div className={styles.sliderWrapper}>
-        <button 
-          className={`${styles.sliderButton} ${styles.prevButton}`}
-          onClick={prevSlide}
-          aria-label="Previous slide"
-        >
-          &#10094;
-        </button>
-
-        <div className={styles.slideTrack}>
-          {slides.map((slide, index) => (
-            <div 
-              key={slide.id}
-              className={`${styles.slide} ${currentSlide === index ? styles.activeSlide : ''} ${styles[`slide${slide.color}`]}`}
-              style={{ 
-                transform: `translateX(${100 * (index - currentSlide)}%)`,
-                display: currentSlide === index ? 'flex' : 'none'
-              }}
-            >
-              <div className={styles.slideImageContainer}>
-                <img 
-                  src={slide.imagePath} 
-                  alt={slide.title} 
-                  className={styles.fullPageImage}
-                />
-                <div className={styles.imageOverlay}></div>
+    <div className="carousel" ref={carouselRef}>
+      <div className="list">
+        {items.map((slide, index) => (
+          <div
+            key={`item-${index}-${slide.id}`}
+            className="item"
+            style={{ backgroundImage: `url(${slide.imagePath})` }}
+            onTransitionEnd={() => {
+              if (index < 3) {
+                resetAnimationState();
+              }
+            }}
+          >
+            <div className="imageOverlay"></div>
+            <div className="content">
+              <div className="title">{slide.title}</div>
+              <div className="name">
+                <span className="icon">{slide.icon}</span> {slide.name}
               </div>
-              
-              <div className={styles.slideContent}>
-                <div className={styles.slideIcon}>{slide.icon}</div>
-                <h2 className={styles.slideTitle}>{slide.title}</h2>
-                <p className={styles.slideDescription}>{slide.description}</p>
-                <button 
-                  className={styles.learnMoreButton}
-                  onClick={() => handleLearnMore(slide)}
-                >
+              <div className="des">{slide.description}</div>
+              <div className="btn">
+                <button onClick={() => handleLearnMore(slide)}>
                   {slide.id === 4 ? "Register Now" : "Learn More"}
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
 
-        <button 
-          className={`${styles.sliderButton} ${styles.nextButton}`}
-          onClick={nextSlide}
+      <div className="arrows">
+        <button
+          className="prev"
+          onClick={handlePrev}
+          disabled={isAnimating}
+          aria-label="Previous slide"
+        >
+          &lt;
+        </button>
+        <button
+          className="next"
+          onClick={handleNext}
+          disabled={isAnimating}
           aria-label="Next slide"
         >
-          &#10095;
+          &gt;
         </button>
       </div>
 
-      <div className={styles.slideDots}>
-        {slides.map((_, index) => (
-          <span 
-            key={index}
-            className={`${styles.dot} ${currentSlide === index ? styles.activeDot : ''}`}
-            onClick={() => goToSlide(index)}
-          />
-        ))}
-      </div>
+      <div className="timeRunning" ref={runningTimeRef}></div>
     </div>
   );
 };

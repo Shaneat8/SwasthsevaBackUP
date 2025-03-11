@@ -701,6 +701,7 @@ const AdminTestManagement = () => {
 
           {/* Patient Info Modal */}
           <Modal
+            bodyStyle={{ maxHeight: 'calc(80vh - 110px)', overflow: 'auto' }}
             title="Patient and Test Information"
             visible={patientInfoVisible}
             onCancel={() => setPatientInfoVisible(false)}
@@ -722,7 +723,7 @@ const AdminTestManagement = () => {
             width={700}
           >
             {patientInfo ? (
-              <div>
+              <div style={{overflowX:'hidden'}}>
                 <Row gutter={[16, 16]}>
                   <Col span={24}>
                     <Title level={4}>Patient Information</Title>
@@ -844,8 +845,9 @@ const AdminTestManagement = () => {
 
           {/* Test Results Modal */}
           <Modal
+            bodyStyle={{ maxHeight: 'calc(80vh - 110px)', overflow: 'auto' }}
             title="Add Test Results"
-            visible={testResultModalVisible}
+            open={testResultModalVisible}
             onCancel={() => setTestResultModalVisible(false)}
             footer={[
               <Button
@@ -935,6 +937,7 @@ const AdminTestManagement = () => {
 
           {/* PDF Preview Modal */}
           <Modal
+            bodyStyle={{ maxHeight: 'calc(80vh - 110px)', overflow: 'auto' }}
             title="Test Report Preview"
             visible={pdfPreviewVisible}
             onCancel={() => setPdfPreviewVisible(false)}
@@ -988,6 +991,7 @@ const AdminTestManagement = () => {
           </Card>
 
           <Modal
+            bodyStyle={{ maxHeight: 'calc(80vh - 110px)', overflowX: 'hidden' }}
             title={
               editingTemplate ? "Edit Test Template" : "Add New Test Template"
             }
@@ -1050,86 +1054,94 @@ const AdminTestManagement = () => {
                 />
               </Form.Item>
 
-              <div className="mb-2 flex justify-between items-center">
-                <h3 className="text-lg font-medium">Test Parameters</h3>
-                <Form.Item>
-                  <Button
-                    type="dashed"
-                    onClick={() => {
-                      const parameters =
-                        templateForm.getFieldValue("parameters") || [];
-                      templateForm.setFieldsValue({
-                        parameters: [
-                          ...parameters,
-                          { name: "", unit: "", refRange: "" },
-                        ],
-                      });
-                    }}
-                    icon={<PlusCircleOutlined />}
-                  >
-                    Add Parameter
-                  </Button>
-                </Form.Item>
-              </div>
-
-              <Form.List
-                name="parameters"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please add at least one parameter",
-                  },
-                ]}
-              >
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <div key={key} className="flex gap-2 mb-2">
-                        <Form.Item
-                          {...restField}
-                          name={[name, "name"]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Parameter name required",
-                            },
-                          ]}
-                          className="w-2/5"
-                        >
-                          <Input placeholder="Parameter Name (e.g., Hemoglobin)" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, "unit"]}
-                          rules={[{ required: true, message: "Unit required" }]}
-                          className="w-1/5"
-                        >
-                          <Input placeholder="Unit (e.g., g/dL)" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, "refRange"]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Reference range required",
-                            },
-                          ]}
-                          className="w-1/3"
-                        >
-                          <Input placeholder="Reference Range (e.g., 13.5 - 17.5)" />
-                        </Form.Item>
-                        <Button
-                          onClick={() => remove(name)}
-                          icon={<MinusCircleOutlined />}
-                          className="mt-1"
-                          danger
-                        />
-                      </div>
-                    ))}
-                  </>
-                )}
-              </Form.List>
+              {/* With this Ant Design approach */}
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography.Title level={4} style={{ margin: 0 }}>Test Parameters</Typography.Title>
+                  <Form.Item style={{ marginBottom: 0 }}>
+                    <Button
+                      type="dashed"
+                      onClick={() => {
+                        const parameters =
+                          templateForm.getFieldValue("parameters") || [];
+                        templateForm.setFieldsValue({
+                          parameters: [
+                            ...parameters,
+                            { name: "", unit: "", refRange: "" },
+                          ],
+                        });
+                      }}
+                      icon={<PlusCircleOutlined />}
+                    >
+                      Add Parameter
+                    </Button>
+                  </Form.Item>
+                </div>
+              {/* With this Ant Design approach */}
+                <Form.List
+                  name="parameters"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please add at least one parameter",
+                    },
+                  ]}
+                >
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Row key={key} gutter={8} style={{ marginBottom: 16 }}>
+                          <Col span={10}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, "name"]}
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Parameter name required",
+                                },
+                              ]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input placeholder="Parameter Name (e.g., Hemoglobin)" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={5}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, "unit"]}
+                              rules={[{ required: true, message: "Unit required" }]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input placeholder="Unit (e.g., g/dL)" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={7}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, "refRange"]}
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Reference range required",
+                                },
+                              ]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <Input placeholder="Reference Range (e.g., 13.5 - 17.5)" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={2} style={{ display: 'flex', alignItems: 'center' }}>
+                            <Button
+                              onClick={() => remove(name)}
+                              icon={<MinusCircleOutlined />}
+                              danger
+                            />
+                          </Col>
+                        </Row>
+                      ))}
+                    </>
+                  )}
+                </Form.List>
             </Form>
           </Modal>
         </TabPane>

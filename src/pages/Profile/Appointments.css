@@ -497,15 +497,21 @@
 }
 /* Animation for cards */
 @keyframes fadeIn {
-  from {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { 
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(-10px);
   }
-  to {
+  to { 
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .booking-card {
   animation: fadeIn 0.4s ease forwards;
 }
@@ -702,4 +708,87 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 25px;
   margin-bottom: 30px;
+}
+
+/* Add more spacing to active filters container */
+.active-filters {
+  animation: fadeIn 0.3s ease-in-out;
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Give filters some breathing room */
+.filter-controls {
+  display: flex;
+  align-items: center;
+} 
+
+/* Enhance tag appearance */
+.active-filters{
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+.ant-tag {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-right: 0;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+/* Add space below search and filter section */
+.search-and-filter-section {
+  margin-bottom: 16px;
+}
+
+/* Keep consistent spacing when filter panel shows/hides */
+.filter-panel {
+  margin-top: 16px;
+  animation: slideDown 0.3s ease-in-out;
+}
+
+.filter-panel .ant-card-body {
+  padding: 16px;
+}
+
+.ant-tag .anticon {
+  margin-right: 4px;
+}
+
+.reset-filter-btn {
+  margin-left: 8px;
+  transition: all 0.3s ease;
+}
+
+.reset-filter-btn:hover {
+  background-color: #fff1f0;
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+}
+
+.filter-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

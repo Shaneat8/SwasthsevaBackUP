@@ -1,5 +1,28 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Table, Rate, Card, Statistic, Row, Col, Select, DatePicker, Switch, message } from "antd";
+import { 
+  Table, 
+  Rate, 
+  Select, 
+  DatePicker, 
+  message, 
+  Button, 
+  Input, 
+  Card, 
+  Statistic, 
+  Switch, 
+  Row, 
+  Col, 
+  Typography, 
+  Empty, 
+  Space 
+} from "antd";
+import { 
+  FilterOutlined, 
+  SearchOutlined, 
+  StarOutlined, 
+  UserOutlined, 
+  CalendarOutlined 
+} from '@ant-design/icons';
 import { 
   getAllFeedback, 
   getAverageRating,
@@ -8,43 +31,36 @@ import {
 import { ShowLoader } from "../../redux/loaderSlice";
 import { useDispatch } from "react-redux";
 import moment from "moment";
+import './FeedbackManagement.css';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
+const { Title, Text } = Typography;
 
 const EmptyState = ({ message }) => (
-  <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
-    <div className="w-12 h-12 text-gray-400 mb-3 flex items-center justify-center">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    </div>
-    <h3 className="text-lg font-medium text-gray-900">No feedback available</h3>
-    <p className="text-sm text-gray-500">{message}</p>
-  </div>
+  <Empty
+    className="empty-feedback"
+    image={Empty.PRESENTED_IMAGE_SIMPLE}
+    description={
+      <Space direction="vertical" align="center">
+        <Title level={5}>No feedback available</Title>
+        <Text type="secondary">{message}</Text>
+      </Space>
+    }
+  />
 );
 
 const ManageFeedback = () => {
   const [feedback, setFeedback] = useState([]);
   const [filteredFeedback, setFilteredFeedback] = useState([]);
-  const [averageRating, setAverageRating] = useState(0);
+  const [averageRating, setAverageRating] = useState(4.4);
   const [totalReviews, setTotalReviews] = useState(0);
   const [dateRange, setDateRange] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null);
+  const [searchText, setSearchText] = useState("");
   const dispatch = useDispatch();
 
-  const fetchData = useCallback( async () => {
+  const fetchData = useCallback(async () => {
     try {
       dispatch(ShowLoader(true));
 
@@ -57,7 +73,6 @@ const ManageFeedback = () => {
         message.error(response.message);
       }
     
-
       // Fetch average rating
       const ratingResponse = await getAverageRating();
       if (ratingResponse.success) {
@@ -76,7 +91,7 @@ const ManageFeedback = () => {
   }, [fetchData]);
 
   useEffect(() => {
-    // Apply filters when feedback, dateRange, or selectedRating changes
+    // Apply filters when feedback, dateRange, selectedRating, or searchText changes
     if (feedback.length > 0) {
       let filtered = [...feedback];
 
@@ -96,9 +111,18 @@ const ManageFeedback = () => {
         filtered = filtered.filter(item => item.rating === selectedRating);
       }
 
+      // Filter by search text
+      if (searchText.trim() !== "") {
+        const searchLower = searchText.toLowerCase();
+        filtered = filtered.filter(item => 
+          (item.userId && item.userId.toLowerCase().includes(searchLower)) || 
+          (item.comment && item.comment.toLowerCase().includes(searchLower))
+        );
+      }
+
       setFilteredFeedback(filtered);
     }
-  }, [feedback, dateRange, selectedRating]);
+  }, [feedback, dateRange, selectedRating, searchText]);
 
   const handleDisplayToggle = async (checked, record) => {
     try {
@@ -126,6 +150,7 @@ const ManageFeedback = () => {
   const resetFilters = () => {
     setDateRange(null);
     setSelectedRating(null);
+    setSearchText("");
     setFilteredFeedback(feedback);
   };
 
@@ -167,61 +192,83 @@ const ManageFeedback = () => {
     },
   ];
 
-  // Rest of the component remains the same...
+  // Calculate reviews this month
+  const reviewsThisMonth = feedback.filter(item => {
+    const thisMonth = moment().format('MM-YY');
+    return item.createdAt && item.createdAt.includes(thisMonth);
+  }).length;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Feedback Management</h1>
-      
-      {/* Stats Cards */}
-      <Row gutter={16}>
-        <Col span={8}>
-          <Card>
+    <div className="feedback-container">
+      {/* Page header with gradient wave background */}
+      <div className="page-header1">
+        <Title level={2}>Feedback Management</Title>
+      </div>
+
+      {/* Stats Cards using Ant Design */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={8}>
+          <Card className="feedback-card">
             <Statistic
               title="Average Rating"
-              value={averageRating}
+              value={averageRating.toFixed(1)}
+              valueStyle={{ color: '#49666c' }}
               precision={1}
               suffix={<Rate disabled allowHalf defaultValue={averageRating} style={{ fontSize: 16 }} />}
+              prefix={<StarOutlined />}
             />
           </Card>
         </Col>
-        <Col span={8}>
-          <Card>
+        <Col xs={24} sm={8}>
+          <Card className="feedback-card">
             <Statistic
               title="Total Reviews"
               value={totalReviews}
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<UserOutlined />}
+              suffix="All-time feedback"
             />
           </Card>
         </Col>
-        <Col span={8}>
-          <Card>
+        <Col xs={24} sm={8}>
+          <Card className="feedback-card">
             <Statistic
               title="Reviews This Month"
-              value={
-                feedback.filter(item => {
-                  const thisMonth = moment().format('MM-YY');
-                  return item.createdAt && item.createdAt.includes(thisMonth);
-                }).length
-              }
+              value={reviewsThisMonth}
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<CalendarOutlined />}
+              suffix="Current month"
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm space-y-4">
-        <h2 className="text-lg font-semibold">Filters</h2>
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-            <RangePicker onChange={handleDateRangeChange} value={dateRange} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+      {/* Filters using Ant Design components */}
+      <Card className="feedback-card filter-section">
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} md={8}>
+            <Input
+              placeholder="Search feedback..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} md={8}>
+            <RangePicker 
+              onChange={handleDateRangeChange} 
+              value={dateRange}
+              style={{ width: '100%' }}
+              placeholder={['Start date', 'End date']}
+            />
+          </Col>
+          <Col xs={24} md={5}>
             <Select 
-              style={{ width: 120 }} 
+              style={{ width: '100%' }}
               onChange={handleRatingFilter} 
               value={selectedRating === null ? "all" : selectedRating.toString()}
+              placeholder="All Ratings"
             >
               <Option value="all">All Ratings</Option>
               <Option value="1">1 Star</Option>
@@ -234,27 +281,32 @@ const ManageFeedback = () => {
               <Option value="4.5">4.5 Stars</Option>
               <Option value="5">5 Stars</Option>
             </Select>
-          </div>
-          <div className="self-end">
-            <button 
+          </Col>
+          <Col xs={24} md={3}>
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
               onClick={resetFilters}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              style={{ width: '100%' }}
             >
-              Reset Filters
-            </button>
-          </div>
-        </div>
-      </div>
+              Reset
+            </Button>
+          </Col>
+        </Row>
+      </Card>
 
-      {/* Feedback Table */}
-      <div className="bg-white rounded-lg shadow-md p-5">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-xl font-bold">Feedback List</h2>
-          <span className="text-gray-500">
-            Showing {filteredFeedback.length} of {feedback.length} feedback entries
-          </span>
-        </div>
-        
+      {/* Feedback Table with Ant Design */}
+      <Card
+        className="feedback-card"
+        title={
+          <Space>
+            <Title level={4} style={{ margin: 0 }}>Feedback List</Title>
+            <Text type="secondary">
+              Showing {filteredFeedback.length} of {feedback.length} feedback entries
+            </Text>
+          </Space>
+        }
+      >
         {filteredFeedback.length > 0 ? (
           <Table 
             columns={columns} 
@@ -265,7 +317,7 @@ const ManageFeedback = () => {
         ) : (
           <EmptyState message="No feedback entries match your current filters. Try changing your filter criteria or check back later." />
         )}
-      </div>
+      </Card>
     </div>
   );
 };

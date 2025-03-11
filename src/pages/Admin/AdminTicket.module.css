@@ -1,0 +1,195 @@
+/* Main container */
+.container {
+    padding: 1rem;
+    background-color: #f9fafb;
+    min-height: 100vh;
+  }
+  
+  .contentWrapper {
+    max-width: 80rem;
+    margin: 0 auto;
+  }
+  
+  .pageTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Filter section */
+  .filterSection {
+    background-color: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .filterControls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 2.5rem;
+  }
+  
+  .searchInput {
+    flex: 1;
+    height: 2.5rem;
+    width: 180px !important;
+  }
+  
+  .filterSelect {
+    width: 150px !important;
+    height: 2.5rem;
+  }
+  
+  .queryTypeSelect {
+    width: 150px !important;
+    height: 2.5rem;
+  }
+  
+  .dateRangePicker {
+    width: 16rem;
+    height: 2.5rem;
+  }
+  
+  .resetButton {
+    width: 8rem;
+    height: 2.5rem;
+  }
+  
+  /* Stats cards */
+  .statsContainer {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  
+  .statsCard {
+    position: relative;
+  }
+  
+  .statsCardBlue {
+    background-color: #eff6ff;
+  }
+  
+  .statsCardYellow {
+    background-color: #fefce8;
+  }
+  
+  .statsCardGreen {
+    background-color: #f0fdf4;
+  }
+  
+  .statsCardPurple {
+    background-color: #f5f3ff;
+  }
+  
+  .statsLabel {
+    font-size: 0.875rem;
+    color: #4b5563;
+  }
+  
+  .statsValue {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  
+  /* Table container */
+  .tableContainer {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Modal content */
+  .modalContent {
+    max-height: 24rem;
+    overflow-y: auto;
+  }
+  
+  /* Timeline styles */
+  .timeline {
+    margin-left: 1.25rem;
+    margin-top: 1rem;
+  }
+  
+  .timelineCard {
+    background-color: #f9fafb;
+  }
+  
+  .timelineCardAdmin {
+    background-color: #eff6ff;
+  }
+  
+  .timelineCardTitle {
+    font-weight: 500;
+  }
+  
+  .timelineCardText {
+    margin-top: 0.5rem;
+    white-space: pre-wrap;
+  }
+  
+  .timelineCardTime {
+    color: #6b7280;
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Status icons */
+  .statusIconGreen {
+    font-size: 1rem;
+    color: #10b981;
+  }
+  
+  .statusIconRed {
+    font-size: 1rem;
+    color: #ef4444;
+  }
+  
+  .statusIconBlue {
+    font-size: 1rem;
+    color: #3b82f6;
+  }
+  
+  /* Conversation history in response modal */
+  .conversationHistory {
+    margin-bottom: 1rem;
+    max-height: 15rem;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    padding: 1rem;
+  }
+  
+  .messageAdmin {
+    margin-bottom: 0.5rem;
+    color: #2563eb;
+  }
+  
+  .messageUser {
+    margin-bottom: 0.5rem;
+    color: #4b5563;
+  }
+  
+  .messageInfo {
+    font-weight: 700;
+  }
+  
+  .messageTime {
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+  
+  /* Descriptions and dividers */
+  .descriptions {
+    margin-bottom: 1rem;
+  }
+  
+  .divider {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }

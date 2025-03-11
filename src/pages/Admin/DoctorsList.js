@@ -18,6 +18,7 @@ import {
   TrophyOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
+import styles from "./DoctorList.module.css";
 
 const DoctorsList = () => {
   const [doctors, setDoctors] = useState([]);
@@ -105,7 +106,7 @@ const DoctorsList = () => {
     // If there's a reschedule status, show it alongside the main status
     if (rescheduleStatus) {
       return (
-        <div className="space-y-1">
+        <div className={styles.spaceY1}>
           <Tag
             icon={statusConfig[status].icon}
             color={statusConfig[status].color}
@@ -145,35 +146,35 @@ const DoctorsList = () => {
   }, [getData]);
 
   const DoctorDetails = ({ doctor }) => (
-    <div className="space-y-6">
+    <div className={styles.spaceY6}>
       <Card
         title={
-          <div className="flex items-center gap-2">
+          <div className={styles.cardTitle}>
             <UserOutlined /> Personal Information
           </div>
         }
       >
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className={styles.gridCols2}>
           <div>
-            <p className="text-gray-500">Full Name</p>
-            <p className="font-medium">{`${doctor?.firstName} ${doctor?.lastName}`}</p>
+            <p className={styles.textGray500}>Full Name</p>
+            <p className={styles.fontMedium}>{`${doctor?.firstName} ${doctor?.lastName}`}</p>
           </div>
           <div>
-            <p className="text-gray-500">Registration ID</p>
-            <p className="font-medium">{doctor?.reg_id}</p>
+            <p className={styles.textGray500}>Registration ID</p>
+            <p className={styles.fontMedium}>{doctor?.reg_id}</p>
           </div>
-          <div className="flex items-start gap-2">
-            <MailOutlined className="mt-1 text-gray-500" />
+          <div className={`${styles.flex} ${styles.itemsStart} ${styles.gap2}`}>
+            <MailOutlined className={`${styles.mt1} ${styles.textGray500}`} />
             <div>
-              <p className="text-gray-500">Email</p>
-              <p className="font-medium">{doctor?.email}</p>
+              <p className={styles.textGray500}>Email</p>
+              <p className={styles.fontMedium}>{doctor?.email}</p>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <PhoneOutlined className="mt-1 text-gray-500" />
+          <div className={`${styles.flex} ${styles.itemsStart} ${styles.gap2}`}>
+            <PhoneOutlined className={`${styles.mt1} ${styles.textGray500}`} />
             <div>
-              <p className="text-gray-500">Phone</p>
-              <p className="font-medium">{doctor?.phone}</p>
+              <p className={styles.textGray500}>Phone</p>
+              <p className={styles.fontMedium}>{doctor?.phone}</p>
             </div>
           </div>
         </div>
@@ -181,29 +182,29 @@ const DoctorsList = () => {
 
       <Card
         title={
-          <div className="flex items-center gap-2">
+          <div className={styles.cardTitle}>
             <TrophyOutlined /> Professional Details
           </div>
         }
       >
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className={styles.gridCols2}>
           <div>
-            <p className="text-gray-500">Specialization</p>
-            <p className="font-medium">{doctor?.Specialist}</p>
+            <p className={styles.textGray500}>Specialization</p>
+            <p className={styles.fontMedium}>{doctor?.Specialist}</p>
           </div>
           <div>
-            <p className="text-gray-500">Qualification</p>
-            <p className="font-medium">{doctor?.Qualification}</p>
+            <p className={styles.textGray500}>Qualification</p>
+            <p className={styles.fontMedium}>{doctor?.Qualification}</p>
           </div>
           <div>
-            <p className="text-gray-500">Experience</p>
-            <p className="font-medium">{doctor?.experience} years</p>
+            <p className={styles.textGray500}>Experience</p>
+            <p className={styles.fontMedium}>{doctor?.experience} years</p>
           </div>
-          <div className="flex items-start gap-2">
-            <DollarOutlined className="mt-1 text-gray-500" />
+          <div className={`${styles.flex} ${styles.itemsStart} ${styles.gap2}`}>
+            <DollarOutlined className={`${styles.mt1} ${styles.textGray500}`} />
             <div>
-              <p className="text-gray-500">Consultation Fee</p>
-              <p className="font-medium">₹{doctor?.Fee}</p>
+              <p className={styles.textGray500}>Consultation Fee</p>
+              <p className={styles.fontMedium}>₹{doctor?.Fee}</p>
             </div>
           </div>
         </div>
@@ -211,24 +212,24 @@ const DoctorsList = () => {
 
       <Card
         title={
-          <div className="flex items-center gap-2">
+          <div className={styles.cardTitle}>
             <CalendarOutlined /> Practice Details
           </div>
         }
       >
-        <div className="space-y-4">
-          <div className="flex items-start gap-2">
-            <ClockCircleOutlined className="mt-1 text-gray-500" />
+        <div className={styles.spaceY4}>
+          <div className={`${styles.flex} ${styles.itemsStart} ${styles.gap2}`}>
+            <ClockCircleOutlined className={`${styles.mt1} ${styles.textGray500}`} />
             <div>
-              <p className="text-gray-500">Consultation Hours</p>
-              <p className="font-medium">
+              <p className={styles.textGray500}>Consultation Hours</p>
+              <p className={styles.fontMedium}>
                 {doctor?.startTime} - {doctor?.endTime}
               </p>
             </div>
           </div>
           <div>
-            <p className="text-gray-500 mb-2">Available Days</p>
-            <div className="flex flex-wrap gap-2">
+            <p className={`${styles.textGray500} ${styles.mb2}`}>Available Days</p>
+            <div className={styles.tagContainer}>
               {doctor?.days?.map((day, index) => (
                 <Tag key={index} color="blue">
                   {day}
@@ -236,11 +237,11 @@ const DoctorsList = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <EnvironmentOutlined className="mt-1 text-gray-500" />
+          <div className={`${styles.flex} ${styles.itemsStart} ${styles.gap2}`}>
+            <EnvironmentOutlined className={`${styles.mt1} ${styles.textGray500}`} />
             <div>
-              <p className="text-gray-500">Address</p>
-              <p className="font-medium whitespace-pre-line">
+              <p className={styles.textGray500}>Address</p>
+              <p className={`${styles.fontMedium} ${styles.whitespacePre}`}>
                 {doctor?.address}
               </p>
             </div>
@@ -256,8 +257,8 @@ const DoctorsList = () => {
       dataIndex: "firstName",
       render: (_, record) => (
         <div>
-          <p className="font-medium">{`${record.firstName} ${record.lastName}`}</p>
-          <p className="text-sm text-gray-500">{record.email}</p>
+          <p className={styles.fontMedium}>{`${record.firstName} ${record.lastName}`}</p>
+          <p className={`${styles.textSm} ${styles.textGray500}`}>{record.email}</p>
         </div>
       ),
     },
@@ -274,7 +275,7 @@ const DoctorsList = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div className="flex items-center gap-2">
+        <div className={`${styles.flex} ${styles.itemsCenter} ${styles.gap2}`}>
           <Button
             type="default"
             icon={<EyeOutlined />}
@@ -292,7 +293,7 @@ const DoctorsList = () => {
               </Button>
               <Button
                 type="primary"
-                className="bg-green-500"
+                className={styles.approveButton}
                 onClick={() => handleStatusChange(record, "approved")}
               >
                 Approve
@@ -310,7 +311,7 @@ const DoctorsList = () => {
           {(record.status === "rejected" || record.status === "blocked") && (
             <Button
               type="primary"
-              className="bg-green-500"
+              className={styles.approveButton}
               onClick={() => handleStatusChange(record, "approved")}
             >
               {record.status === "rejected" ? "Approve" : "Unblock"}
@@ -367,7 +368,7 @@ const DoctorsList = () => {
   ];
 
   return (
-    <div className="p-6">
+    <div className={styles.container}>
       <Card title="Doctors Management">
         <Table
           columns={columns}
@@ -377,6 +378,7 @@ const DoctorsList = () => {
       </Card>
 
       <Modal
+        bodyStyle={{ maxHeight: 'calc(80vh - 110px)', overflow: 'auto' }}
         title="Doctor Information"
         open={isModalOpen}
         onCancel={() => {

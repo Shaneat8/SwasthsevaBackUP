@@ -1,4 +1,4 @@
-import { message, Table, Tabs, Modal, Form, DatePicker, Select, Input, Button, Tooltip, Badge, Card } from "antd";
+import { message, Table, Tabs, Modal, Form, DatePicker, Select, Input, Button, Tooltip, Badge, Card, Row, Col, Tag } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   GetDoctorAppointments,
@@ -21,7 +21,9 @@ import {
   SyncOutlined,
   FileTextOutlined,
   InfoCircleOutlined,
-  SearchOutlined
+  SearchOutlined,
+  FilterOutlined,
+  UndoOutlined
 } from "@ant-design/icons";
 import DoctorLeaveModal from "../DoctorForm/DoctorLeaveModal";
 import './Appointments.css'; // This imports the CSS file
@@ -107,6 +109,15 @@ function Appointments({ compact = false }) {
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  
+  // Filter states
+  const [dateRange, setDateRange] = useState(null);
+  const [timeSlotFilter, setTimeSlotFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  
+  const { RangePicker } = DatePicker;
   
   const user = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
@@ -120,6 +131,15 @@ function Appointments({ compact = false }) {
     "02:00 PM - 03:00 PM",
     "03:00 PM - 04:00 PM",
     "04:00 PM - 05:00 PM",
+  ];
+
+  // Status options for filter
+  const statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'seen', label: 'Seen' },
+    { value: 'cancelled', label: 'Cancelled' }
   ];
 
   const showLeaveModal = () => {
@@ -162,20 +182,83 @@ function Appointments({ compact = false }) {
     }
   }, [user.id, user.role, dispatch]);
 
-  const filterCurrentDayAppointments = (data) => {
-    const today = moment().startOf('day');
-    const now = moment();
+// Around line 194
+const filterCurrentDayAppointments = (data) => {
+  const today = moment().startOf('day');
+  const now = moment();
 
-    const currentDayAppointments = data.filter((appointment) => {
-      const appointmentDate = moment(appointment.date).startOf('day');
-      const startTime = appointment.timeSlot.split(' - ')[0];
-      const appointmentTime = moment(startTime, "hh:mm A");
-      const isToday = appointmentDate.isSame(today, 'day');
-      const isFutureTime = appointmentTime.isAfter(now);
-      return isToday && (isFutureTime || appointment.status === 'approved');
-    });
+  const currentDayAppointments = data.filter((appointment) => {
+    const appointmentDate = moment(appointment.date).startOf('day');
+    const startTime = appointment.timeSlot.split(' - ')[0];
+    const appointmentTime = moment(startTime, "hh:mm A");
+    const isToday = appointmentDate.isSame(today, 'day');
+    const isFutureTime = appointmentTime.isAfter(now);
+    return isToday && (isFutureTime || appointment.status === 'approved');
+  });
 
-    setCurrentDayAppointments(currentDayAppointments);
+  setCurrentDayAppointments(currentDayAppointments);
+};
+
+  // Enhanced filter function
+  const applyFilters = useCallback(() => {
+    let filtered = [...appointments];
+    let activeFilters = 0;
+
+    // Search text filter
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      filtered = filtered.filter(item => {
+        const patientName = item.userName ? item.userName.toLowerCase() : '';
+        const doctorName = item.doctorName ? item.doctorName.toLowerCase() : '';
+        const problem = item.problem ? item.problem.toLowerCase() : '';
+        
+        return patientName.includes(searchLower) || 
+               doctorName.includes(searchLower) || 
+               problem.includes(searchLower);
+      });
+      activeFilters++;
+    }
+
+    // Date range filter
+    if (dateRange) {
+      const [startDate, endDate] = dateRange;
+      filtered = filtered.filter(item => {
+        const appointmentDate = moment(item.date);
+        return appointmentDate.isSameOrAfter(startDate, 'day') && 
+               appointmentDate.isSameOrBefore(endDate, 'day');
+      });
+      activeFilters++;
+    }
+
+    // Time slot filter
+    if (timeSlotFilter !== 'all') {
+      filtered = filtered.filter(item => item.timeSlot === timeSlotFilter);
+      activeFilters++;
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(item => item.status === statusFilter);
+      activeFilters++;
+    }
+
+    setFilteredAppointments(filtered);
+    setActiveFiltersCount(activeFilters);
+  }, [appointments, searchText, dateRange, timeSlotFilter, statusFilter]);
+
+  // Apply filters when filter states change
+  useEffect(() => {
+    applyFilters();
+    filterCurrentDayAppointments(filteredAppointments);
+  }, [applyFilters, searchText, dateRange, timeSlotFilter, statusFilter,filteredAppointments]);
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchText('');
+    setDateRange(null);
+    setTimeSlotFilter('all');
+    setStatusFilter('all');
+    setActiveFiltersCount(0);
   };
 
   const onUpdate = async (id, status, data = {}) => {
@@ -290,19 +373,6 @@ function Appointments({ compact = false }) {
 
   const handleSearch = (value) => {
     setSearchText(value);
-    
-    const filtered = appointments.filter(item => {
-      const searchVal = value.toLowerCase();
-      const patientName = item.userName ? item.userName.toLowerCase() : '';
-      const doctorName = item.doctorName ? item.doctorName.toLowerCase() : '';
-      const problem = item.problem ? item.problem.toLowerCase() : '';
-      
-      return patientName.includes(searchVal) || 
-             doctorName.includes(searchVal) || 
-             problem.includes(searchVal);
-    });
-    
-    setFilteredAppointments(filtered);
   };
 
   // Manually refresh appointments
@@ -495,16 +565,159 @@ function Appointments({ compact = false }) {
         </div>
       </div>
       
-      <div className="search-section">
-        <Input
-          placeholder={`Search ${user.role === "doctor" ? "patients" : "appointments"}...`}
-          prefix={<SearchOutlined />}
-          onChange={(e) => handleSearch(e.target.value)}
-          value={searchText}
-          className="search-input"
-          allowClear
-          size={ "large"}
-        />
+      <div className="search-and-filter-section">
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} sm={16} md={12} lg={10}>
+            <Input
+              placeholder={`Search ${user.role === "doctor" ? "patients" : "appointments"}...`}
+              prefix={<SearchOutlined />}
+              onChange={(e) => handleSearch(e.target.value)}
+              value={searchText}
+              className="search-input"
+              allowClear
+              size={"large"}
+            />
+          </Col>
+          <Col xs={24} sm={8} md={12} lg={14}>
+            <div className="filter-controls">
+              <Button 
+                icon={<FilterOutlined />} 
+                onClick={() => setIsFilterVisible(!isFilterVisible)}
+                type={activeFiltersCount > 0 ? "primary" : "default"}
+                size={"large"}
+              >
+                Filters
+                {activeFiltersCount > 0 && (
+                  <Badge 
+                    count={activeFiltersCount} 
+                    size="small" 
+                    style={{ backgroundColor: '#1890ff' }} 
+                  />
+                )}
+              </Button>
+              
+              {activeFiltersCount > 0 && (
+                <Button 
+                  icon={<UndoOutlined />} 
+                  onClick={resetFilters}
+                  size={"large"}
+                  className="reset-filter-btn"
+                  style={{ marginLeft: '8px' }}
+                >
+                  Reset
+                </Button>
+              )}
+
+{activeFiltersCount > 0 && (
+              <div className="active-filters" style={{ marginTop: '-1px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {dateRange && (
+                  <Tag 
+                    closable 
+                    onClose={() => setDateRange(null)} 
+                    color="blue"
+                    style={{ padding: '4px 8px', borderRadius: '4px', marginRight: 0 }}
+                  >
+                    <CalendarOutlined style={{ marginRight: '4px' }} /> 
+                    {moment(dateRange[0]).format('DD MMM')} - {moment(dateRange[1]).format('DD MMM')}
+                  </Tag>
+                )}
+                
+                {timeSlotFilter !== 'all' && (
+                  <Tag 
+                    closable 
+                    onClose={() => setTimeSlotFilter('all')} 
+                    color="green"
+                    style={{ padding: '4px 8px', borderRadius: '4px', marginRight: 0 }}
+                  >
+                    <ClockCircleOutlined style={{ marginRight: '4px' }} /> {timeSlotFilter}
+                  </Tag>
+                )}
+                
+                {statusFilter !== 'all' && (
+                  <Tag 
+                    closable 
+                    onClose={() => setStatusFilter('all')} 
+                    color="purple"
+                    style={{ padding: '4px 8px', borderRadius: '4px', marginRight: 0 }}
+                  >
+                    {getStatusIcon(statusFilter)} 
+                    <span style={{ marginLeft: '4px' }}>
+                      {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                    </span>
+                  </Tag>
+                )}
+                
+                {searchText && (
+                  <Tag 
+                    closable 
+                    onClose={() => setSearchText('')} 
+                    color="magenta"
+                    style={{ padding: '4px 8px', borderRadius: '4px', marginRight: 0 }}
+                  >
+                    <SearchOutlined style={{ marginRight: '4px' }} /> "{searchText}"
+                  </Tag>
+                )}
+              </div>
+            )}
+            </div>  
+           
+          </Col>
+        </Row>
+        
+        {isFilterVisible && (
+          <div className="filter-panel">
+            <Card className="filter-card">
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                  <div className="filter-group">
+                    <label><CalendarOutlined /> Date Range</label>
+                    <RangePicker 
+                      value={dateRange}
+                      onChange={(dates) => setDateRange(dates)}
+                      style={{ width: '100%' }}
+                      size={compact ? "small" : "middle"}
+                    />
+                  </div>
+                </Col>
+                
+                <Col xs={24} md={8}>
+                  <div className="filter-group">
+                    <label><ClockCircleOutlined /> Time Slot</label>
+                    <Select
+                      value={timeSlotFilter}
+                      onChange={(value) => setTimeSlotFilter(value)}
+                      style={{ width: '100%' }}
+                      size={compact ? "small" : "middle"}
+                    >
+                      <Select.Option value="all">All Time Slots</Select.Option>
+                      {timeSlots.map((slot) => (
+                        <Select.Option key={slot} value={slot}>{slot}</Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                </Col>
+                
+                <Col xs={24} md={8}>
+                  <div className="filter-group">
+                    <label><CheckCircleOutlined /> Status</label>
+                    <Select
+                      value={statusFilter}
+                      onChange={(value) => setStatusFilter(value)}
+                      style={{ width: '100%' }}
+                      size={compact ? "small" : "middle"}
+                    >
+                      {statusOptions.map((option) => (
+                        <Select.Option key={option.value} value={option.value}>
+                          {option.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                </Col>
+              </Row>
+            </Card>
+          </div>
+        )}
       </div>
       
       <div className="info-card">
@@ -713,6 +926,7 @@ function Appointments({ compact = false }) {
               />
             </Form.Item>
 
+            
             <Form.Item
               name="newTimeSlot"
               label={

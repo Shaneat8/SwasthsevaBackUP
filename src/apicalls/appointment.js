@@ -260,7 +260,7 @@ export const UpdateAppointmentStatus = async (id, status, data = {}) => {
   }
 };
 
-export const HandleLeaveResponse = async (appointmentId, action) => {
+export const HandleLeaveResponse = async (appointmentId, action, rescheduleData = null) => {
   try {
     const appointmentRef = doc(firestoredb, "appointments", appointmentId);
     const appointmentSnap = await getDoc(appointmentRef);
@@ -292,16 +292,18 @@ export const HandleLeaveResponse = async (appointmentId, action) => {
         status: "cancelled",
         cancellationReason: "Cancelled due to doctor's leave",
         cancelledOn: new Date().toISOString(),
-        leaveResponseAction: "cancelled"
+        leaveResponseAction: "cancelled",
+        leaveResolutionDate: new Date().toISOString()
       });
 
       // Send cancellation confirmation email to patient
       if (appointmentData.userEmail) {
         await sendAppointmentEmail(
           appointmentData.userEmail,
-          'PATIENT_REJECT', // Reuse the rejection email template
+          'PATIENT_REJECT',
           {
-            doctorName: appointmentData.doctorName
+            doctorName: appointmentData.doctorName,
+            leaveReason: appointmentData.leaveReason
           }
         );
       }
@@ -313,32 +315,88 @@ export const HandleLeaveResponse = async (appointmentId, action) => {
       };
       
     } else if (action === "reschedule") {
-      // Mark the appointment as being rescheduled
-      await updateDoc(appointmentRef, {
-        leaveResponseAction: "rescheduling",
-        leaveResponseDate: new Date().toISOString()
-      });
-      
-      // Return data to help populate the booking form
-      return {
-        success: true,
-        message: "Ready to reschedule appointment",
-        action: "reschedule",
-        appointmentData: {
-          id: appointmentId,
-          doctorId: appointmentData.doctorId,
-          doctorName: appointmentData.doctorName,
-          userId: appointmentData.userId,
-          userName: appointmentData.userName,
-          userEmail: appointmentData.userEmail,
-          problem: appointmentData.problem,
-          originalDate: appointmentData.date,
-          originalTimeSlot: appointmentData.timeSlot,
-          leaveStartDate: appointmentData.leaveStartDate,
-          leaveEndDate: appointmentData.leaveEndDate,
-          status: appointmentData.status
+      // If reschedule data is provided, immediately reschedule
+      if (rescheduleData && rescheduleData.newDate && rescheduleData.newTimeSlot) {
+        // Check if the doctor is on leave for the new date
+        const leaveStatus = await CheckDoctorLeaveStatus(
+          appointmentData.doctorId,
+          rescheduleData.newDate
+        );
+        
+        if (leaveStatus.isOnLeave) {
+          return {
+            success: false,
+            message: `Cannot reschedule to ${rescheduleData.newDate}. The doctor is on leave on this date. Reason: ${leaveStatus.leaveReason}`,
+            isOnLeave: true,
+            leaveReason: leaveStatus.leaveReason
+          };
         }
-      };
+        
+        // Update appointment with new schedule
+        await updateDoc(appointmentRef, {
+          status: "approved",
+          date: rescheduleData.newDate,
+          timeSlot: rescheduleData.newTimeSlot,
+          suggestedNewDate: null,
+          suggestedNewTimeSlot: null,
+          leaveResponseAction: "rescheduled",
+          leaveResolutionDate: new Date().toISOString()
+        });
+        
+        // Notify patient of the immediate reschedule
+        if (appointmentData.userEmail) {
+          await sendAppointmentEmail(
+            appointmentData.userEmail,
+            'APPOINTMENT_RESCHEDULED',
+            {
+              patientName: appointmentData.userName || "Patient",
+              doctorName: appointmentData.doctorName,
+              originalDate: appointmentData.date,
+              originalTime: appointmentData.timeSlot,
+              newDate: rescheduleData.newDate,
+              newTime: rescheduleData.newTimeSlot,
+              leaveReason: appointmentData.leaveReason
+            }
+          );
+        }
+        
+        return {
+          success: true,
+          message: "Appointment rescheduled successfully",
+          action: "reschedule",
+          newDate: rescheduleData.newDate,
+          newTimeSlot: rescheduleData.newTimeSlot
+        };
+      } 
+      // Otherwise, just mark it for rescheduling (like preparing for rescheduling screen)
+      else {
+        // Mark the appointment as being rescheduled
+        await updateDoc(appointmentRef, {
+          leaveResponseAction: "rescheduling",
+          leaveResponseDate: new Date().toISOString()
+        });
+        
+        // Return data to help populate the booking form
+        return {
+          success: true,
+          message: "Ready to reschedule appointment",
+          action: "reschedule",
+          appointmentData: {
+            id: appointmentId,
+            doctorId: appointmentData.doctorId,
+            doctorName: appointmentData.doctorName,
+            userId: appointmentData.userId,
+            userName: appointmentData.userName,
+            userEmail: appointmentData.userEmail,
+            problem: appointmentData.problem,
+            originalDate: appointmentData.date,
+            originalTimeSlot: appointmentData.timeSlot,
+            leaveStartDate: appointmentData.leaveStartDate,
+            leaveEndDate: appointmentData.leaveEndDate,
+            status: appointmentData.status
+          }
+        };
+      }
     } else {
       return {
         success: false,
@@ -517,65 +575,103 @@ export const UpdateRescheduleResponse = async (appointmentId, response) => {
 
     const appointmentData = appointmentSnap.data();
     const updateData = {};
+    const isAccepting = response === 'accept';
 
-    // Check if the appointment is actually pending reschedule
-    if (appointmentData.rescheduleStatus !== "pending") {
+    // Handle both regular reschedule and leave-affected appointments
+    const isLeaveAffected = appointmentData.status === "affected-by-leave";
+    const isPendingReschedule = appointmentData.rescheduleStatus === "pending";
+    
+    // Validate the appointment state
+    if (!isLeaveAffected && !isPendingReschedule) {
       return {
         success: false,
-        message: "No pending reschedule request found",
+        message: "No pending reschedule or leave-affected request found",
       };
     }
 
-    const isAccepting = response === 'accept';
-
     if (isAccepting) {
-      // Check if doctor is on leave for the new suggested date before accepting
+      // For leave-affected appointments, we need to check new date parameters
+      if (isLeaveAffected && (!appointmentData.suggestedNewDate || !appointmentData.suggestedNewTimeSlot)) {
+        return {
+          success: false,
+          message: "Missing new appointment details for leave-affected appointment",
+        };
+      }
+      
+      // Get the target date (either from suggestedNewDate or from parameters)
+      const targetDate = appointmentData.suggestedNewDate;
+      const targetTimeSlot = appointmentData.suggestedNewTimeSlot;
+      
+      // Check if doctor is on leave for the new date
       const leaveStatus = await CheckDoctorLeaveStatus(
         appointmentData.doctorId, 
-        appointmentData.suggestedNewDate
+        targetDate
       );
       
       if (leaveStatus.isOnLeave) {
         return {
           success: false,
-          message: `Cannot reschedule to ${appointmentData.suggestedNewDate}. The doctor is on leave on this date. Reason: ${leaveStatus.leaveReason}`,
+          message: `Cannot reschedule to ${targetDate}. The doctor is on leave on this date. Reason: ${leaveStatus.leaveReason}`,
           isOnLeave: true,
           leaveReason: leaveStatus.leaveReason
         };
       }
         
       // Update appointment with new schedule
-      updateData.date = appointmentData.suggestedNewDate;
-      updateData.timeSlot = appointmentData.suggestedNewTimeSlot;
+      updateData.date = targetDate;
+      updateData.timeSlot = targetTimeSlot;
       updateData.status = "approved";
-      updateData.rescheduleStatus = "accepted";
+      
+      // Update the appropriate status field
+      if (isPendingReschedule) {
+        updateData.rescheduleStatus = "accepted";
+      } else if (isLeaveAffected) {
+        updateData.leaveResponseAction = "rescheduled";
+        updateData.leaveResolutionDate = new Date().toISOString();
+      }
     } else {
       // Mark as cancelled if rejected
       updateData.status = "cancelled";
-      updateData.rescheduleStatus = "rejected";
+      
+      if (isPendingReschedule) {
+        updateData.rescheduleStatus = "rejected";
+      } else if (isLeaveAffected) {
+        updateData.leaveResponseAction = "cancelled";
+        updateData.leaveResolutionDate = new Date().toISOString();
+      }
     }
 
-    // Clear the suggested fields
-    updateData.suggestedNewDate = null;
-    updateData.suggestedNewTimeSlot = null;
-    updateData.cancellationReason = null;
+    // Clear the suggested fields if they exist
+    if (appointmentData.suggestedNewDate) updateData.suggestedNewDate = null;
+    if (appointmentData.suggestedNewTimeSlot) updateData.suggestedNewTimeSlot = null;
+    if (appointmentData.cancellationReason) updateData.cancellationReason = null;
 
     // Update the appointment
     await updateDoc(appointmentRef, updateData);
 
     // Send email notifications
     try {
+      const emailTemplateDoctorType = isAccepting ? 'DOCTOR_ACCEPT' : 'DOCTOR_REJECT';
+      const emailTemplatePatientType = isAccepting ? 'PATIENT_ACCEPT' : 'PATIENT_REJECT';
+      
+      // Custom email template for leave-affected appointments if needed
+      // if (isLeaveAffected) {
+      //   emailTemplateDoctorType = isAccepting ? 'LEAVE_DOCTOR_ACCEPT' : 'LEAVE_DOCTOR_REJECT';
+      //   emailTemplatePatientType = isAccepting ? 'LEAVE_PATIENT_ACCEPT' : 'LEAVE_PATIENT_REJECT';
+      // }
+
       // Notify doctor
       if (appointmentData.doctorEmail) {
         await sendAppointmentEmail(
           appointmentData.doctorEmail,
-          isAccepting ? 'DOCTOR_ACCEPT' : 'DOCTOR_REJECT',
+          emailTemplateDoctorType,
           {
             userName: appointmentData.userName,
-            newDate: appointmentData.suggestedNewDate,
-            newTime: appointmentData.suggestedNewTimeSlot,
+            newDate: appointmentData.suggestedNewDate || updateData.date,
+            newTime: appointmentData.suggestedNewTimeSlot || updateData.timeSlot,
             originalDate: appointmentData.date,
-            originalTime: appointmentData.timeSlot
+            originalTime: appointmentData.timeSlot,
+            leaveAffected: isLeaveAffected
           }
         );
       }
@@ -584,11 +680,13 @@ export const UpdateRescheduleResponse = async (appointmentId, response) => {
       if (appointmentData.userEmail) {
         await sendAppointmentEmail(
           appointmentData.userEmail,
-          isAccepting ? 'PATIENT_ACCEPT' : 'PATIENT_REJECT',
+          emailTemplatePatientType,
           {
             doctorName: appointmentData.doctorName,
-            newDate: appointmentData.suggestedNewDate,
-            newTime: appointmentData.suggestedNewTimeSlot
+            newDate: appointmentData.suggestedNewDate || updateData.date,
+            newTime: appointmentData.suggestedNewTimeSlot || updateData.timeSlot,
+            leaveAffected: isLeaveAffected,
+            leaveReason: appointmentData.leaveReason
           }
         );
       }

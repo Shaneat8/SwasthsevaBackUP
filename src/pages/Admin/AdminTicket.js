@@ -5,6 +5,7 @@ import { collection, query, onSnapshot, updateDoc, doc } from 'firebase/firestor
 import firestoredb from '../../firebaseConfig';
 import axios from 'axios';
 import Fuse from 'fuse.js';
+import styles from './AdminTicket.module.css';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -168,7 +169,7 @@ const AdminTicket = () => {
   };
 
   // Enhanced filter and search functions
-  const applyFilters =useCallback( () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...tickets];
 
     // Use Fuse.js for search if there's search text
@@ -208,12 +209,12 @@ const AdminTicket = () => {
     }
 
     setFilteredTickets(filtered);
-  },[dateRange,fuse,priorityFilter,queryTypeFilter,searchText,statusFilter,tickets]);
+  }, [dateRange, fuse, priorityFilter, queryTypeFilter, searchText, statusFilter, tickets]);
 
   // Apply filters whenever filter states change
   useEffect(() => {
     applyFilters();
-  }, [tickets, searchText, priorityFilter, statusFilter, dateRange,applyFilters]);
+  }, [tickets, searchText, priorityFilter, statusFilter, dateRange, applyFilters]);
 
   const resetFilters = () => {
     setSearchText('');
@@ -241,7 +242,7 @@ const AdminTicket = () => {
         allowClear
         value={localSearch}
         onChange={e => setLocalSearch(e.target.value)}
-        className="h-10 search-input" 
+        className={styles.searchInput}
         suffix={<SearchOutlined/>}
       />
     );
@@ -254,10 +255,10 @@ const AdminTicket = () => {
     const uniqueQueryTypes = [...new Set(tickets.map(t => t.queryType))].filter(Boolean);
   
     return (
-      <div className="bg-white p-4 mb-4 rounded-lg shadow">
-        <div className="flex items-center gap-4 h-10">
+      <div className={styles.filterSection}>
+        <div className={styles.filterControls}>
           {/* Enhanced Search */}
-          <div className="flex-1">
+          <div className={styles.searchInput}>
             <SearchBar/>
           </div>
   
@@ -265,7 +266,7 @@ const AdminTicket = () => {
           <Select
             value={priorityFilter}
             onChange={setPriorityFilter}
-            className="w-32"
+            className={styles.filterSelect}
             placeholder="Filter by Priority"
             style={{ height: '40px' }}
           >
@@ -281,12 +282,13 @@ const AdminTicket = () => {
           <Select
             value={statusFilter}
             onChange={setStatusFilter}
-            className="w-32"
+            className={styles.filterSelect}
             placeholder="Filter by Status"
             style={{ height: '40px' }}
           >
             <Option value="all">All Statuses</Option>
             <Option value="open">Open</Option>
+            <Option value="reopened">Reopened</Option>
             <Option value="resolved">Resolved</Option>
             <Option value="closed">Closed</Option>
           </Select>
@@ -295,7 +297,7 @@ const AdminTicket = () => {
           <Select
             value={queryTypeFilter}
             onChange={setQueryTypeFilter}
-            className="w-48"
+            className={styles.queryTypeSelect}
             placeholder="Query Type"
             style={{ height: '40px' }}
           >
@@ -311,7 +313,7 @@ const AdminTicket = () => {
           <RangePicker
             value={dateRange}
             onChange={setDateRange}
-            className="w-64"
+            className={styles.dateRangePicker}
             style={{ height: '40px' }}
           />
   
@@ -319,7 +321,7 @@ const AdminTicket = () => {
           <Button 
             onClick={resetFilters}
             icon={<FilterOutlined />}
-            className="w-32"
+            className={styles.resetButton}
             style={{ height: '40px' }}
           >
             Reset
@@ -327,18 +329,18 @@ const AdminTicket = () => {
         </div>
   
         {/* Quick Stats */}
-        <div className="mt-4 grid grid-cols-4 gap-4">
-          <Card size="small" className="bg-blue-50">
-            <p className="text-sm text-gray-600">Open Tickets</p>
-            <p className="text-xl font-bold">{tickets.filter(t => t.status === 'open').length}</p>
+        <div className={styles.statsContainer}>
+          <Card size="small" className={styles.statsCardBlue}>
+            <p className={styles.statsLabel}>Open Tickets</p>
+            <p className={styles.statsValue}>{tickets.filter(t => t.status === 'open').length}</p>
           </Card>
-          <Card size="small" className="bg-yellow-50">
-            <p className="text-sm text-gray-600">High Priority</p>
-            <p className="text-xl font-bold">{tickets.filter(t => t.priority?.toLowerCase() === 'high').length}</p>
+          <Card size="small" className={styles.statsCardYellow}>
+            <p className={styles.statsLabel}>High Priority</p>
+            <p className={styles.statsValue}>{tickets.filter(t => t.priority?.toLowerCase() === 'high').length}</p>
           </Card>
-          <Card size="small" className="bg-green-50">
-            <p className="text-sm text-gray-600">Resolved Today</p>
-            <p className="text-xl font-bold">
+          <Card size="small" className={styles.statsCardGreen}>
+            <p className={styles.statsLabel}>Resolved Today</p>
+            <p className={styles.statsValue}>
               {tickets.filter(t => {
                 if (!t.lastUpdated) return false;
                 const today = new Date();
@@ -348,15 +350,14 @@ const AdminTicket = () => {
               }).length}
             </p>
           </Card>
-          <Card size="small" className="bg-purple-50">
-            <p className="text-sm text-gray-600">Total Tickets</p>
-            <p className="text-xl font-bold">{tickets.length}</p>
+          <Card size="small" className={styles.statsCardPurple}>
+            <p className={styles.statsLabel}>Total Tickets</p>
+            <p className={styles.statsValue}>{tickets.length}</p>
           </Card>
         </div>
       </div>
     );
   };
-
 
   const columns = [
     {
@@ -426,159 +427,157 @@ const AdminTicket = () => {
   ];
 
   const getStatusIcon = (status) => {
-    const iconStyle = { fontSize: '16px' };
     switch (status) {
       case 'resolved':
       case 'closed':
-        return <CheckCircleOutlined style={iconStyle} className="text-green-500" />;
+        return <CheckCircleOutlined className={styles.statusIconGreen} />;
       case 'reopened':
-        return <CloseCircleOutlined style={iconStyle} className="text-red-500" />;
+        return <CloseCircleOutlined className={styles.statusIconRed} />;
       default:
-        return <ClockCircleOutlined style={iconStyle} className="text-blue-500" />;
+        return <ClockCircleOutlined className={styles.statusIconBlue} />;
     }
   };
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Ticket Management</h1>
+    <div className={styles.container}>
+      <div className={styles.contentWrapper}>
+        <h1 className={styles.pageTitle}>Ticket Management</h1>
         
         {/* Filter Section */}
         <FilterSection />
 
         {/* Tickets Table */}
-        <div className="bg-white rounded-lg shadow">
+        <div className={styles.tableContainer}>
           <Table
             columns={columns}
             dataSource={filteredTickets}
             rowKey="id"
-            className="mb-4"
           />
         </div>
 
-      {/* View Ticket Modal */}
-      <Modal
-        title={`Ticket Details #${selectedTicket?.ticketId}`}
-        open={isViewModalVisible}
-        onCancel={() => setIsViewModalVisible(false)}
-        width={800}
-        footer={[
-          <Button key="close" onClick={() => setIsViewModalVisible(false)}>
-            Close
-          </Button>,
-          selectedTicket?.status !== 'closed' && (
-            <Button
-              key="closeTicket"
-              type="primary"
-              danger
-              onClick={() => {
-                Modal.confirm({
-                  title: 'Close Ticket',
-                  icon: <ExclamationCircleOutlined />,
-                  content: 'Are you sure you want to close this ticket?',
-                  okText: 'Yes',
-                  cancelText: 'No',
-                  onOk: handleCloseTicket
-                });
-              }}
-            >
-              Close Ticket
-            </Button>
-          )
-        ]}
-      >
-        {selectedTicket && (
-          <div className="max-h-96 overflow-y-auto">
-            <Descriptions bordered column={2} className="mb-4">
-              <Descriptions.Item label="Status" span={1}>
-                <Tag color={getStatusColor(selectedTicket.status)}>
-                  {selectedTicket.status.toUpperCase()}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Priority" span={1}>
-                <Tag color={selectedTicket.priority?.toLowerCase() === 'high' ? 'red' : 
-                          selectedTicket.priority?.toLowerCase() === 'medium' ? 'orange' : 'green'}>
-                  {selectedTicket.priority}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Subject" span={2}>
-                {selectedTicket.subject}
-              </Descriptions.Item>
-              <Descriptions.Item label="Query Type" span={2}>
-                {selectedTicket.queryType}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email" span={2}>
-                {selectedTicket.email}
-              </Descriptions.Item>
-            </Descriptions>
+        {/* View Ticket Modal */}
+        <Modal
+          title={`Ticket Details #${selectedTicket?.ticketId}`}
+          open={isViewModalVisible}
+          onCancel={() => setIsViewModalVisible(false)}
+          width={800}
+          footer={[
+            <Button key="close" onClick={() => setIsViewModalVisible(false)}>
+              Close
+            </Button>,
+            selectedTicket?.status !== 'closed' && (
+              <Button
+                key="closeTicket"
+                type="primary"
+                danger
+                onClick={() => {
+                  Modal.confirm({
+                    title: 'Close Ticket',
+                    icon: <ExclamationCircleOutlined />,
+                    content: 'Are you sure you want to close this ticket?',
+                    okText: 'Yes',
+                    cancelText: 'No',
+                    onOk: handleCloseTicket
+                  });
+                }}
+              >
+                Close Ticket
+              </Button>
+            )
+          ]}
+        >
+          {selectedTicket && (
+            <div className={styles.modalContent}>
+              <Descriptions bordered column={2} className={styles.descriptions}>
+                <Descriptions.Item label="Status" span={1}>
+                  <Tag color={getStatusColor(selectedTicket.status)}>
+                    {selectedTicket.status.toUpperCase()}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Priority" span={1}>
+                  <Tag color={selectedTicket.priority?.toLowerCase() === 'high' ? 'red' : 
+                            selectedTicket.priority?.toLowerCase() === 'medium' ? 'orange' : 'green'}>
+                    {selectedTicket.priority}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Subject" span={2}>
+                  {selectedTicket.subject}
+                </Descriptions.Item>
+                <Descriptions.Item label="Query Type" span={2}>
+                  {selectedTicket.queryType}
+                </Descriptions.Item>
+                <Descriptions.Item label="Email" span={2}>
+                  {selectedTicket.email}
+                </Descriptions.Item>
+              </Descriptions>
 
-            <Divider className="my-6" />      
+              <Divider className={styles.divider} />      
 
-            <Timeline style={{ marginLeft: '20px' }} className="mt-4">
-              <Timeline.Item dot={getStatusIcon('open')}>
-                <Card size="small" className="bg-gray-50">
-                  <h4 className="font-medium">Initial Query</h4>
-                  <p className="mt-2 whitespace-pre-wrap">{selectedTicket.description}</p>
-                  <small className="text-gray-500 block mt-2">
-                    {selectedTicket.createdAt && new Date(selectedTicket.createdAt.toDate()).toLocaleString()}
-                  </small>
-                </Card>
-              </Timeline.Item>
-
-              {selectedTicket.conversationHistory?.map((msg, index) => (
-                <Timeline.Item
-                  key={index}
-                  dot={getStatusIcon(msg.type === 'admin' ? 'resolved' : 'reopened')}
-                >
-                  <Card 
-                    size="small" 
-                    className={msg.type === 'admin' ? 'bg-blue-50' : 'bg-gray-50'}
-                  >
-                    <h4 className="font-medium">
-                      {msg.type === 'admin' ? 'Admin Response' : 'User Response'}
-                    </h4>
-                    <p className="mt-2 whitespace-pre-wrap">{msg.message}</p>
-                    <small className="text-gray-500 block mt-2">
-                      {msg.timestamp && new Date(msg.timestamp.toDate()).toLocaleString()}
+              <Timeline className={styles.timeline}>
+                <Timeline.Item dot={getStatusIcon('open')}>
+                  <Card size="small" className={styles.timelineCard}>
+                    <h4 className={styles.timelineCardTitle}>Initial Query</h4>
+                    <p className={styles.timelineCardText}>{selectedTicket.description}</p>
+                    <small className={styles.timelineCardTime}>
+                      {selectedTicket.createdAt && new Date(selectedTicket.createdAt.toDate()).toLocaleString()}
                     </small>
                   </Card>
                 </Timeline.Item>
-              ))}
-            </Timeline>
-          </div>
-        )}
-      </Modal>
 
-      {/* Response Modal */}
-      <Modal
-        title={`Respond to Ticket #${selectedTicket?.ticketId}`}
-        open={isResponseModalVisible}
-        onOk={handleResponse}
-        onCancel={() => {
-          setIsResponseModalVisible(false);
-          setResponse('');
-        }}
-        confirmLoading={loading}
-      >
-        {selectedTicket?.conversationHistory && (
-          <div className="mb-4 max-h-60 overflow-y-auto border rounded p-4">
-            {selectedTicket.conversationHistory.map((msg, index) => (
-              <div key={index} className={`mb-2 ${msg.type === 'admin' ? 'text-blue-600' : 'text-gray-600'}`}>
-                <strong>{msg.type === 'admin' ? 'Admin' : 'User'}:</strong> {msg.message}
-                <div className="text-xs text-gray-400">
-                  {msg.timestamp && new Date(msg.timestamp.toDate()).toLocaleString()}
+                {selectedTicket.conversationHistory?.map((msg, index) => (
+                  <Timeline.Item
+                    key={index}
+                    dot={getStatusIcon(msg.type === 'admin' ? 'resolved' : 'reopened')}
+                  >
+                    <Card 
+                      size="small" 
+                      className={msg.type === 'admin' ? styles.timelineCardAdmin : styles.timelineCard}
+                    >
+                      <h4 className={styles.timelineCardTitle}>
+                        {msg.type === 'admin' ? 'Admin Response' : 'User Response'}
+                      </h4>
+                      <p className={styles.timelineCardText}>{msg.message}</p>
+                      <small className={styles.timelineCardTime}>
+                        {msg.timestamp && new Date(msg.timestamp.toDate()).toLocaleString()}
+                      </small>
+                    </Card>
+                  </Timeline.Item>
+                ))}
+              </Timeline>
+            </div>
+          )}
+        </Modal>
+
+        {/* Response Modal */}
+        <Modal
+          title={`Respond to Ticket #${selectedTicket?.ticketId}`}
+          open={isResponseModalVisible}
+          onOk={handleResponse}
+          onCancel={() => {
+            setIsResponseModalVisible(false);
+            setResponse('');
+          }}
+          confirmLoading={loading}
+        >
+          {selectedTicket?.conversationHistory && (
+            <div className={styles.conversationHistory}>
+              {selectedTicket.conversationHistory.map((msg, index) => (
+                <div key={index} className={msg.type === 'admin' ? styles.messageAdmin : styles.messageUser}>
+                  <strong className={styles.messageInfo}>{msg.type === 'admin' ? 'Admin' : 'User'}:</strong> {msg.message}
+                  <div className={styles.messageTime}>
+                    {msg.timestamp && new Date(msg.timestamp.toDate()).toLocaleString()}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <TextArea
-          rows={4}
-          value={response}
-          onChange={(e) => setResponse(e.target.value)}
-          placeholder="Type your response..."
-        />
-      </Modal>
+              ))}
+            </div>
+          )}
+          <TextArea
+            rows={4}
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            placeholder="Type your response..."
+          />
+        </Modal>
       </div>
     </div>
   );

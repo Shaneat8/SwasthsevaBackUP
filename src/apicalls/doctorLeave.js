@@ -336,18 +336,60 @@ export const GetAllDoctorLeaves = async () => {
 };
 
 // Export the CheckDoctorOnLeave function with an alternate name to match what's used in appointmentApiCalls
-export const CheckDoctorLeaveStatus = async (doctorId, date) => {
-  const result = await CheckDoctorOnLeave(doctorId, date);
-  
-  if (!result.success) {
+export const CheckDoctorLeaveStatus = async (doctorId, checkDate) => {
+  try {
+    // Ensure the date is in the correct format (YYYY-MM-DD)
+    const formattedDate = typeof checkDate === 'string' 
+      ? checkDate 
+      : checkDate.toISOString().split('T')[0];
+    
+    // Query all active leaves for this doctor
+    const leavesQuery = query(
+      collection(firestoredb, "doctorLeaves"),
+      where("doctorId", "==", doctorId),
+      where("status", "==", "approved")
+    );
+    
+    const querySnapshot = await getDocs(leavesQuery);
+    
+    // Check if any leave period includes the date we're checking
+    let isOnLeave = false;
+    let leaveReason = "";
+    let leaveId = "";
+    
+    querySnapshot.forEach((doc) => {
+      const leaveData = doc.data();
+      
+      // Parse dates
+      const startDate = new Date(leaveData.startDate);
+      const endDate = new Date(leaveData.endDate);
+      const checkDateObj = new Date(formattedDate);
+      
+      // Reset the time part to compare dates only
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      checkDateObj.setHours(0, 0, 0, 0);
+      
+      // Check if the date falls within the leave period
+      if (checkDateObj >= startDate && checkDateObj <= endDate) {
+        isOnLeave = true;
+        leaveReason = leaveData.reason;
+        leaveId = doc.id;
+      }
+    });
+    
     return {
+      success: true,
+      isOnLeave,
+      leaveReason,
+      leaveId
+    };
+  } catch (error) {
+    console.error("Error checking doctor leave status:", error);
+    return {
+      success: false,
       isOnLeave: false,
-      leaveReason: ""
+      message: error.message,
     };
   }
-  
-  return {
-    isOnLeave: result.data.onLeave,
-    leaveReason: result.data.reason || ""
-  };
 };

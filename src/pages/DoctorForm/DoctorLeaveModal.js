@@ -24,6 +24,8 @@ import {
 import moment from "moment";
 import { AddDoctorLeave, GetDoctorLeaves, CancelDoctorLeave } from "../../apicalls/doctorLeave";
 import { HandleAppointmentsForDoctorLeave } from "../../apicalls/appointment";
+import firestoredb from "../../firebaseConfig";
+import { doc, updateDoc } from "firebase/firestore";
 
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
@@ -102,35 +104,63 @@ const DoctorLeaveModal = ({ visible, onCancel, doctorId, doctorName, doctorEmail
       const leaveData = {
         doctorId,
         doctorName,
-        doctorEmail: doctorEmail || null, // Add null as fallback
+        doctorEmail: doctorEmail || null,
         startDate: dateRange[0].format("YYYY-MM-DD"),
         endDate: dateRange[1].format("YYYY-MM-DD"),
         reason: values.reason,
         status: "approved",
       };
   
-      console.log("Leave data before submission:", leaveData); // Add this for debugging
-  
+      // First check if there are any appointments that will be affected
+      const checkResponse = await HandleAppointmentsForDoctorLeave(
+        doctorId,
+        leaveData.startDate,
+        leaveData.endDate,
+        leaveData.reason,
+        true // Just check, don't modify appointments yet
+      );
+      
+      // If checking failed, return early
+      if (!checkResponse.success) {
+        message.error(checkResponse.message || "Failed to check for affected appointments");
+        setLoading(false);
+        return;
+      }
+      
+      // Submit the leave request
       const response = await AddDoctorLeave(leaveData);
       
       if (response.success) {
-        // Now handle any affected appointments
+        // Now actually handle the affected appointments
         const appointmentsResponse = await HandleAppointmentsForDoctorLeave(
           doctorId,
           leaveData.startDate,
           leaveData.endDate,
-          leaveData.reason
+          leaveData.reason,
+          false // Actually process the appointments
         );
         
         let successMessage = "Leave request submitted successfully";
-        if (appointmentsResponse.success && appointmentsResponse.affectedCount > 0) {
-          successMessage += `. ${appointmentsResponse.affectedCount} appointments have been automatically cancelled and patients notified.`;
+        
+        if (appointmentsResponse.success) {
+          if (appointmentsResponse.affectedCount > 0) {
+            successMessage += `. ${appointmentsResponse.affectedCount} appointments have been marked as affected, and patients have been notified.`;
+            
+            // Store affected appointments in the leave record for reference
+            await updateDoc(doc(firestoredb, "doctorLeaves", response.leaveId), {
+              affectedAppointments: appointmentsResponse.affectedAppointments
+            });
+          } else {
+            successMessage += ". No appointments were affected by this leave.";
+          }
+        } else {
+          successMessage += ". However, there was an issue processing affected appointments.";
         }
         
         message.success(successMessage);
         form.resetFields();
-        fetchLeaveHistory(); // Refresh the history
-        setTabKey("history"); // Switch to history tab
+        fetchLeaveHistory();
+        setTabKey("history");
         setShowAffectedWarning(false);
         setAffectedAppointments([]);
       } else {
@@ -141,6 +171,7 @@ const DoctorLeaveModal = ({ visible, onCancel, doctorId, doctorName, doctorEmail
         message.error("Please fill all required fields");
       } else {
         message.error("An error occurred while submitting the request");
+        console.error(error);
       }
     } finally {
       setLoading(false);
