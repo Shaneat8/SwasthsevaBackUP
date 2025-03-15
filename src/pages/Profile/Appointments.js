@@ -112,7 +112,8 @@ function Appointments({ compact = false }) {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   
   // Filter states
-  const [dateRange, setDateRange] = useState(null);
+  const [dateRange, setDateRange] = useState([moment().startOf('day'), moment().add(14, 'days').endOf('day')]);
+
   const [timeSlotFilter, setTimeSlotFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
@@ -122,6 +123,7 @@ function Appointments({ compact = false }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
 
   const timeSlots = [
     "09:00 AM - 10:00 AM",
@@ -203,7 +205,7 @@ const filterCurrentDayAppointments = (data) => {
   const applyFilters = useCallback(() => {
     let filtered = [...appointments];
     let activeFilters = 0;
-
+  
     // Search text filter
     if (searchText) {
       const searchLower = searchText.toLowerCase();
@@ -218,39 +220,44 @@ const filterCurrentDayAppointments = (data) => {
       });
       activeFilters++;
     }
-
+    
     // Date range filter
-    if (dateRange) {
-      const [startDate, endDate] = dateRange;
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = moment(dateRange[0]).startOf('day');
+      const endDate = moment(dateRange[1]).endOf('day');
+      
       filtered = filtered.filter(item => {
-        const appointmentDate = moment(item.date);
-        return appointmentDate.isSameOrAfter(startDate, 'day') && 
-               appointmentDate.isSameOrBefore(endDate, 'day');
+        // Make sure we're parsing the date correctly
+        const appointmentDate = moment(item.date, 'YYYY-MM-DD');
+        return appointmentDate.isBetween(startDate, endDate, 'day', '[]');
       });
+      
       activeFilters++;
     }
-
+  
     // Time slot filter
     if (timeSlotFilter !== 'all') {
       filtered = filtered.filter(item => item.timeSlot === timeSlotFilter);
       activeFilters++;
     }
-
+  
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(item => item.status === statusFilter);
       activeFilters++;
     }
-
+  
     setFilteredAppointments(filtered);
     setActiveFiltersCount(activeFilters);
   }, [appointments, searchText, dateRange, timeSlotFilter, statusFilter]);
-
   // Apply filters when filter states change
   useEffect(() => {
     applyFilters();
-    filterCurrentDayAppointments(filteredAppointments);
-  }, [applyFilters, searchText, dateRange, timeSlotFilter, statusFilter,filteredAppointments]);
+  }, [applyFilters, searchText, dateRange, timeSlotFilter, statusFilter]);
+
+  useEffect(() => {
+    filterCurrentDayAppointments(appointments);
+  }, [appointments]);
 
   // Reset all filters
   const resetFilters = () => {

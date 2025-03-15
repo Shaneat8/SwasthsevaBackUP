@@ -1,223 +1,155 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import "./Slider.css";
 
+import appointmentImage from "../../images/book_appnt.png";
+import doctorImage from "../../images/doc_24.png";
+import recordsImage from "../../images/med_record.png";
+import reportsImage from "../../images/test_report.png";
+import reg_doc from "../../images/reg_doc.png";
+
 const HeroSlider = () => {
-  const navigate = useNavigate();
   const carouselRef = useRef(null);
   const runningTimeRef = useRef(null);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  const slides = [
+  const [items, setItems] = useState([
     {
-      id: 1,
-      title: "SLIDER",
+      background: appointmentImage,
+      name: "Book Appointments",
+      des: "Schedule appointments with our specialists at your convenience. Choose from available time slots and receive instant confirmation."
+    },
+    {
+      background: doctorImage,
       name: "Find the Right Doctor",
-      description: "Connect with experienced specialists who can address your health concerns with personalized care.",
-      icon: "👨‍⚕️",
-      color: "blue",
-      action: () => navigate("/doctor-list"),
-      imagePath: require("../../images/doc1.png")
+      des: "Connect with experienced specialists who can address your health concerns with personalized care."
     },
     {
-      id: 2,
-      title: "SLIDER",
-      name: "Book Appointments Easily",
-      description: "Schedule your consultation in seconds with our intuitive appointment booking system.",
-      icon: "📅",
-      color: "green",
-      action: () => navigate("/appointments"),
-      imagePath: require("../../images/dpc2.png")
-    },
-    {
-      id: 3,
-      title: "SLIDER",
+      background: recordsImage,
       name: "Access Medical Records",
-      description: "Keep all your health information in one secure place for better continuity of care.",
-      icon: "📋",
-      color: "purple",
-      action: () => navigate("/medical-records"),
-      imagePath: require("../../images/doc1.png")
+      des: "Keep all your health information in one secure place for better continuity of care."
     },
     {
-      id: 4,
-      title: "SLIDER",
+      background: reportsImage,
+      name: "View Test Reports",
+      des: "Access your test reports and appointment summaries anytime. Track your health progress with our user-friendly dashboard."
+    },
+    {
+      background: reg_doc,
       name: "Register as a Doctor",
-      description: "Join our platform as a healthcare provider and connect with patients seeking your expertise.",
-      icon: "🩺",
-      color: "orange",
-      action: () => navigate("/doctor"),
-      imagePath: require("../../images/doc1.png")
-    }
-  ];
+      des: "Join our platform as a healthcare provider and connect with patients seeking your expertise."
+    },
+  ]);
 
-  const slidesRef = useRef(slides);
-  const initialItemsRef = useRef([...slides, ...slides, ...slides, ...slides]);
-  const [items, setItems] = useState(initialItemsRef.current);
-
-  const slideTransitionTime = 1000;
-  const timeAutoNext = 6000;
-
+  const slideTransitionTime = 700;
+  const timeAutoNext = 5000;
+  
   const runTimeOutRef = useRef(null);
   const runNextAutoRef = useRef(null);
-  const contentAnimTimeoutRef = useRef(null);
-  const isInitialMount = useRef(true);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const resetTimeAnimation = useCallback(() => {
     if (runningTimeRef.current) {
       runningTimeRef.current.style.animation = 'none';
       void runningTimeRef.current.offsetHeight;
-      runningTimeRef.current.style.animation = `runningTime ${timeAutoNext / 1000}s linear forwards`;
+      runningTimeRef.current.style.animation = `runningTime ${timeAutoNext/1000}s linear 1 forwards`;
     }
   }, [timeAutoNext]);
 
-  const resetAnimationState = useCallback(() => {
-    if (carouselRef.current) {
-      carouselRef.current.classList.remove('next');
-      carouselRef.current.classList.remove('prev');
-    }
-  }, []);
-
-  const triggerContentAnimations = useCallback(() => {
-    const activeContent = document.querySelector('.list .item:nth-child(2) .content');
-    if (activeContent) {
-      const elements = activeContent.querySelectorAll('.title, .name, .des, .btn');
-      elements.forEach((el, i) => {
-        el.style.animation = 'none';
-        void el.offsetHeight;
-        el.style.animation = `fadeInContent 0.5s ease-out ${0.1 * (i + 1)}s forwards`;
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    const currentSlides = slidesRef.current;
-    currentSlides.forEach(slide => {
-      if (typeof slide.imagePath === 'string') {
-        const img = new Image();
-        img.src = slide.imagePath;
-      }
-    });
-  }, []);
-
   const showSlider = useCallback((type) => {
     if (!carouselRef.current || isAnimating) return;
-
+    
     setIsAnimating(true);
-    clearTimeout(contentAnimTimeoutRef.current);
-
-    if (type === 'next') {
-      carouselRef.current.classList.add('next');
-    } else {
-      carouselRef.current.classList.add('prev');
-    }
-
-    clearTimeout(runTimeOutRef.current);
-    runTimeOutRef.current = setTimeout(() => {
-      const newItems = [...items];
-
+    
+    setTimeout(() => {
       if (type === 'next') {
-        const firstItem = newItems.shift();
-        newItems.push(firstItem);
+        carouselRef.current.classList.add('next');
       } else {
-        const lastItem = newItems.pop();
-        newItems.unshift(lastItem);
+        carouselRef.current.classList.add('prev');
       }
-
-      resetAnimationState();
-      setItems(newItems);
-
-      contentAnimTimeoutRef.current = setTimeout(() => {
-        triggerContentAnimations();
-        setIsAnimating(false);
-      }, 100);
-    }, slideTransitionTime);
+      
+      clearTimeout(runTimeOutRef.current);
+      runTimeOutRef.current = setTimeout(() => {
+        let newItems = [...items];
+        
+        if (type === 'next') {
+          const firstItem = newItems.shift();
+          newItems.push(firstItem);
+        } else {
+          const lastItem = newItems.pop();
+          newItems.unshift(lastItem);
+        }
+        
+        carouselRef.current.classList.remove('next');
+        carouselRef.current.classList.remove('prev');
+        
+        setItems(newItems);
+        
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 50);
+      }, slideTransitionTime);
+    }, 300);
 
     clearTimeout(runNextAutoRef.current);
+
     runNextAutoRef.current = setTimeout(() => {
       showSlider('next');
     }, timeAutoNext);
 
     resetTimeAnimation();
-  }, [isAnimating, items, resetAnimationState, resetTimeAnimation, slideTransitionTime, timeAutoNext, triggerContentAnimations]);
+  }, [items, resetTimeAnimation, slideTransitionTime, timeAutoNext, isAnimating]);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      resetTimeAnimation();
-      triggerContentAnimations();
+    resetTimeAnimation();
 
-      runNextAutoRef.current = setTimeout(() => {
-        showSlider('next');
-      }, timeAutoNext);
-    }
+    runNextAutoRef.current = setTimeout(() => {
+      showSlider('next');
+    }, timeAutoNext);
 
     return () => {
       clearTimeout(runTimeOutRef.current);
       clearTimeout(runNextAutoRef.current);
-      clearTimeout(contentAnimTimeoutRef.current);
     };
-  }, [resetTimeAnimation, showSlider, timeAutoNext, triggerContentAnimations]);
+  }, [resetTimeAnimation, showSlider, timeAutoNext]); 
 
-  const handleNext = useCallback(() => {
+  const handlePrev = () => {
     if (!isAnimating) {
-      clearTimeout(runNextAutoRef.current);
-      showSlider('next');
-    }
-  }, [isAnimating, showSlider]);
-
-  const handlePrev = useCallback(() => {
-    if (!isAnimating) {
-      clearTimeout(runNextAutoRef.current);
       showSlider('prev');
     }
-  }, [isAnimating, showSlider]);
+  };
 
-  const handleLearnMore = useCallback((slide) => {
-    if (slide.action) {
-      slide.action();
+  const handleNext = () => {
+    if (!isAnimating) {
+      showSlider('next');
     }
-  }, []);
-
-  useEffect(() => {
-    const checkCarouselState = () => {
-      if (carouselRef.current &&
-        (carouselRef.current.classList.contains('next') ||
-          carouselRef.current.classList.contains('prev'))) {
-        resetAnimationState();
-      }
-    };
-
-    const intervalId = setInterval(checkCarouselState, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [resetAnimationState]);
+  };
 
   return (
     <div className="carousel" ref={carouselRef}>
       <div className="list">
-        {items.map((slide, index) => (
+        {items.map((item, index) => (
           <div
-            key={`item-${index}-${slide.id}`}
+            key={`item-${index}-${item.name}`}
             className="item"
-            style={{ backgroundImage: `url(${slide.imagePath})` }}
-            onTransitionEnd={() => {
-              if (index < 3) {
-                resetAnimationState();
-              }
-            }}
+            style={{ backgroundImage: `url(${item.background})` }}
           >
-            <div className="imageOverlay"></div>
             <div className="content">
-              <div className="title">{slide.title}</div>
-              <div className="name">
-                <span className="icon">{slide.icon}</span> {slide.name}
-              </div>
-              <div className="des">{slide.description}</div>
+              <div className="name">{item.name}</div>
+              <div className="des">{item.des}</div>
               <div className="btn">
-                <button onClick={() => handleLearnMore(slide)}>
-                  {slide.id === 4 ? "Register Now" : "Learn More"}
-                </button>
+                {item.name === "Book Appointments" && (
+                  <button><a href="/book-doctor">Book Now</a></button>
+                )}
+                {item.name === "Find the Right Doctor" && (
+                  <button><a href="/book-doctor">Meet Our Doctors</a></button>
+                )}
+                {item.name === "Access Medical Records" && (
+                  <button><a href="/profile?tab=records">Access Files</a></button>
+                )}
+                {item.name === "View Test Reports" && (
+                  <button><a href="/profile?tab=records">View Reports</a></button>
+                )}
+                {item.name === "Register as a Doctor" && (
+                  <button><a href="/doctor">Register Now</a></button>
+                )}
               </div>
             </div>
           </div>
@@ -225,22 +157,33 @@ const HeroSlider = () => {
       </div>
 
       <div className="arrows">
-        <button
-          className="prev"
+        <button 
+          className="prev" 
           onClick={handlePrev}
           disabled={isAnimating}
-          aria-label="Previous slide"
         >
           &lt;
         </button>
-        <button
-          className="next"
+        <button 
+          className="next" 
           onClick={handleNext}
           disabled={isAnimating}
-          aria-label="Next slide"
         >
           &gt;
         </button>
+      </div>
+      
+      <div className="bottom-previews">
+        {items.slice(2, 4).map((item, index) => (
+          <div 
+            key={`preview-${index}`} 
+            className="preview-item"
+            style={{ backgroundImage: `url(${item.background})` }}
+            onClick={() => !isAnimating && showSlider(index === 0 ? 'next' : 'next')}
+          >
+            <div className="preview-label">{item.name}</div>
+          </div>
+        ))}
       </div>
 
       <div className="timeRunning" ref={runningTimeRef}></div>

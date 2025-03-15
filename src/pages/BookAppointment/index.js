@@ -113,13 +113,19 @@ function BookAppointment() {
   }, [dispatch, id]);
 
   const getSlotsData = () => {
-    // If the doctor is on leave, display a clear message
+    // If the doctor is on leave, display a clear message and prevent slot selection
     if (isLeaveDay) {
       return (
         <div className="leave-notification">
           <Alert
             message="Doctor Unavailable"
-            description={`Dr. ${doctor.firstName} ${doctor.lastName} is on leave on ${moment(date).format("dddd, MMMM Do YYYY")}. Reason: ${leaveReason}`}
+            description={
+              <>
+                <b>Dr. {doctor.firstName} {doctor.lastName}</b> is on leave on {moment(date).format("dddd, MMMM Do YYYY")}.
+                <br />
+                <b>Reason:</b> {leaveReason}
+              </>
+            }
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -277,11 +283,11 @@ function BookAppointment() {
       if (response.success) {
         setBookedSlots(response.data);
         
-        // Check if the doctor is on leave based on the response
+        // Make sure this part is working correctly
         if (response.isOnLeave) {
           setIsLeaveDay(true);
           setLeaveReason(response.leaveReason);
-          setSelectedSlot(""); // Clear any selected slot
+          setSelectedSlot(""); // Clear any selected slot when doctor is on leave
         } else {
           setIsLeaveDay(false);
           setLeaveReason("");
@@ -429,13 +435,13 @@ function BookAppointment() {
               </motion.div>
             )}
 
-            {selectedSlot && !isLeaveDay && (
-              <motion.div 
-                className="medical-problem-container"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
+              {selectedSlot && !isLeaveDay && (
+                <motion.div 
+                  className="medical-problem-container"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
                 <div className="appointment-summary">
                   <Text strong>
                     <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />

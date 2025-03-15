@@ -12,41 +12,39 @@ import firestoredb from "../firebaseConfig";
 import sendAppointmentEmail from "./reschedule_app";
 import { CheckDoctorLeaveStatus } from "./doctorLeave";
 
+// In appointment.js
 export const BookDoctorAppointment = async (payload) => {
   try {
+    // Make sure date is in the correct format for comparison
+    const formattedDate = typeof payload.date === 'string' 
+      ? payload.date 
+      : payload.date.toISOString().split('T')[0];
+      
     // Check if the doctor is on leave for the requested date
-    const leaveStatus = await CheckDoctorLeaveStatus(payload.doctorId, payload.date);
+    const leaveStatus = await CheckDoctorLeaveStatus(payload.doctorId, formattedDate);
+    
+    console.log("Leave status check result:", leaveStatus); // Add logging for debugging
     
     if (leaveStatus.isOnLeave) {
+      console.log("Doctor is on leave, should reject booking"); // Add logging
       return {
         success: false,
-        message: `The doctor is on leave on ${payload.date}. Reason: ${leaveStatus.leaveReason}`,
+        message: `Dr. ${payload.doctorName} is on leave on ${payload.date}. Reason: ${leaveStatus.leaveReason}`,
         isOnLeave: true,
         leaveReason: leaveStatus.leaveReason
       };
     }
     
+    // Rest of booking code...
     const docRef = await addDoc(collection(firestoredb, "appointments"), {
       ...payload,
       status: "pending",
       bookedOn: new Date().toISOString(),
       rescheduleStatus: null,
     });
-
-    // Send email notification to patient about new appointment
-    if (payload.userEmail) {
-      await sendAppointmentEmail(
-        payload.userEmail,
-        'NEW_APPOINTMENT',
-        {
-          patientName: payload.userName,
-          date: payload.date,
-          timeSlot: payload.timeSlot,
-          problem: payload.problem
-        }
-      );
-    }
-
+    
+    // Email notification code...
+    
     return {
       success: true,
       message: "Appointment Booked Successfully",

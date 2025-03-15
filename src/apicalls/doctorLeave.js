@@ -336,17 +336,13 @@ export const GetAllDoctorLeaves = async () => {
 };
 
 // Export the CheckDoctorOnLeave function with an alternate name to match what's used in appointmentApiCalls
+// In doctorLeave.js
 export const CheckDoctorLeaveStatus = async (doctorId, checkDate) => {
   try {
-    // Ensure the date is in the correct format (YYYY-MM-DD)
-    const formattedDate = typeof checkDate === 'string' 
-      ? checkDate 
-      : checkDate.toISOString().split('T')[0];
     
     // Query all active leaves for this doctor
     const leavesQuery = query(
-      collection(firestoredb, "doctorLeaves"),
-      where("doctorId", "==", doctorId),
+      collection(firestoredb, "doctorLeaves", doctorId, "leaves"),
       where("status", "==", "approved")
     );
     
@@ -360,15 +356,27 @@ export const CheckDoctorLeaveStatus = async (doctorId, checkDate) => {
     querySnapshot.forEach((doc) => {
       const leaveData = doc.data();
       
-      // Parse dates
-      const startDate = new Date(leaveData.startDate);
-      const endDate = new Date(leaveData.endDate);
-      const checkDateObj = new Date(formattedDate);
+      // Parse dates - ensure we're handling Firestore timestamps correctly
+      const startDate = leaveData.startDate instanceof Timestamp 
+        ? leaveData.startDate.toDate() 
+        : new Date(leaveData.startDate);
+        
+      const endDate = leaveData.endDate instanceof Timestamp 
+        ? leaveData.endDate.toDate() 
+        : new Date(leaveData.endDate);
+        
+      const checkDateObj = new Date(checkDate);
       
       // Reset the time part to compare dates only
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(0, 0, 0, 0);
       checkDateObj.setHours(0, 0, 0, 0);
+      
+      console.log("Comparing dates:", {
+        checkDate: checkDateObj.toISOString(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      }); // Add logging
       
       // Check if the date falls within the leave period
       if (checkDateObj >= startDate && checkDateObj <= endDate) {
@@ -377,6 +385,8 @@ export const CheckDoctorLeaveStatus = async (doctorId, checkDate) => {
         leaveId = doc.id;
       }
     });
+    
+    console.log("Final leave status:", { isOnLeave, leaveReason }); // Add logging
     
     return {
       success: true,
